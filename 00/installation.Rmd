@@ -12,10 +12,13 @@ These packages need to be installed for the course:
 
 ```{r}
 options(repos = c(CRAN = "https://cloud.r-project.org")) # HT: fyGuo
-install.packages("devtools")
-install.packages("dplyr") # tidyverse
+install.packages("devtools") # Package management tools
+install.packages("tidyverse") # Tidy data
+install.packages("dplyr") # Data manipulation
 install.packages("ggplot2") # Data visualization
-install.packages("rmarkdown") # Rmarkdown
 install.packages("knitr") # Rmarkdown
+install.package("dslabs") # Datasets
+install.package("rafalib") # Data exploration
+install.packages("rmarkdown") # Rmarkdown
 install.packages("tableone") # Summary stats
 ```
