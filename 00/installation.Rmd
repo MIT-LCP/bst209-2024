@@ -1,0 +1,21 @@
+---
+title: "Installing libraries"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+These packages need to be installed for the course:
+
+
+```{r}
+options(repos = c(CRAN = "https://cloud.r-project.org")) # HT: fyGuo
+install.packages("devtools")
+install.packages("dplyr") # tidyverse
+install.packages("ggplot2") # Data visualization
+install.packages("rmarkdown") # Rmarkdown
+install.packages("knitr") # Rmarkdown
+install.packages("tableone") # Summary stats
+```
