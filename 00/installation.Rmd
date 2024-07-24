@@ -21,4 +21,6 @@ install.package("dslabs") # Datasets
 install.package("rafalib") # Data exploration
 install.packages("rmarkdown") # Rmarkdown
 install.packages("tableone") # Summary stats
+install.packages("glmnet") # Generalized linear models
+install.packages("GGally") # Grammar of graphics
 ```
