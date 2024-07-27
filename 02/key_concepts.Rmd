@@ -1,0 +1,546 @@
+---
+title: 'Key concepts'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(digits=3)
+set.seed(1)
+library(caret)
+library(dslabs)
+library(e1071)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+ds_theme_set()
+```
+
+Over the next three weeks, we will explore key concepts in machine learning. Our goal will be to become familiar with the kind of language used in machine learning research, and to build and evaluate machine learning models.
+
+We'll be referring to a highly-cited machine learning paper on “Scalable and accurate deep learning with electronic health records” throughout this workshop. You can find the paper here: https://www.nature.com/articles/s41746-018-0029-1
+
+## Rule-based programming
+
+We are all familiar with the idea of applying rules to data to gain insights and make decisions. For example, we learn that human body temperature is ~37 °C (~98.5 °F), and that deviations from this norm can indicate health issues.
+
+If we were developing software to flag patients at risk of deterioration, we might used rule-based programming to create early-warning rules like the one below:
+
+```{r}
+# Define our function for detecting fever
+has_fever <- function(temp_c) {
+    if (temp_c > 38) {
+        return(TRUE)
+    } else {
+        return(FALSE)
+    }
+}
+
+# Test the function
+has_fever(38.5)
+```
+
+You could also consider a text classification task where we want to identify if a given text message is spam. In a rule-based approach, we might manually define keywords and patterns to flag spam:
+
+```{r}
+# Define our function for detecting spam
+is_spam <- function(text) {
+    spam_keywords <- c("win", "prize", "free", "click here")
+    for (keyword in spam_keywords) {
+        if (grepl(keyword, text, ignore.case = TRUE)) {
+            return(TRUE)
+        }
+    }
+    return(FALSE)
+}
+
+# Test the function
+is_spam("Help! I'm stuck in an elevator.")
+```
+
+## Machine learning
+
+Machine learning modifies this approach by enabling the creation of rules dynamically based on data. Instead of explicitly coding every rule, we feed data and insights to a machine learning model, which then learns the rules autonomously.
+
+As the volume and complexity of data increase, the model's ability to identify patterns and generate accurate rules also improves, leading to more powerful insights.
+
+## Statistics and “AI”
+
+There are ongoing and often polarized debates about the relationship between statistics, machine learning, and “A.I”. Keeping out of the fight, a slightly hand-wavy, non-controversial take might be:
+
+- *Statistics*: A well-established field of mathematics concerned with methods for collecting, analyzing, interpreting and presenting empirical data.
+- *Machine learning*: A set of computational methods that learn rules from data, often with the goal of prediction. Borrows from other disciplines, notably statistics and computer science.
+- *Deep learning*: A subfield of machine learning that focuses on more complex “artificial neural network” algorithms.
+- *Artificial intelligence*: The goal of conferring human-like intelligence to machines. “A.I.” has become popularly used as a synonym for machine learning, so researchers working on the goal of intelligent machines have taken to using “Artificial General Intelligence” (A.G.I.) for clarity.
+
+![Figure 1: Statistics, machine learning, and “AI” (sandserifcomics)](ai.jpg)
+
+## Supervised vs unsupervised learning
+
+Often, you'll hear about "supervised" and "unsupervised" machine learning. Supervised machine learning involves the use of labeled datasets to train models for classification and prediction. This can be contrasted with unsupervised machine learning, which attempts to identify meaningful patterns within unlabeled datasets.
+
+### Exercise:
+
+A) We have laboratory test data on patients admitted to a critical care unit and we are trying to identify patients with an emerging, rare disease. There are no labels to indicate which patients have the disease, but we believe that the infected patients will have very distinct characteristics. Should we look for a supervised or unsupervised machine learning approach?
+
+B) We would like to predict whether or not patients will respond to a new drug that is under development based on several genetic markers. We have a large corpus of clinical trial data that includes both genetic markers of patients and their response the new drug. Do we use a supervised or unsupervised approach?
+
+## Notation
+
+Data comes in the form of
+
+1. the _**outcome**_ we want to predict and 
+2. the _**features**_ that we will use to predict the outcome.
+
+We want to build an algorithm that takes feature values as input and returns a prediction for the outcome when we don't know it. The machine learning approach is to use a dataset for which we do know the outcome to _**train**_ the algorithm for future use.
+
+Here use $Y$ to denote the outcome and $X_1, \dots, X_p$ to denote features. **Features are sometimes referred to as predictors or covariates**.
+
+![](https://blogs.nvidia.com/wp-content/uploads/2018/07/Supervised_machine_learning_in_a_nutshell.svg_.png)
+
+
+Prediction problems can be divided into categorical and continuous outcomes. For categorical outcomes, the outcome $Y$ can be one of $K$ classes. The number of classes can vary greatly across applications. For example, for handwritten digits, $K = 10$ with the classes being the digits 0, 1, 2, 3, 4, 5, 6, 7, 8, and 9. In speech recognition, the outcome is all possible words we are trying to detect. Spam detection has two outcomes: spam or not spam. Here we denote the $K$ categories with indexes $k=1,\dots,K$. However, for binary data we will use $k = 0,1$. 
+
+The general setup is as follows. We have a series of features and an unknown outcome we want to predict:
+
+```{r,echo=FALSE}
+# Create a data frame to illustrate the general setup of a prediction problem.
+# In this example, we will have one row with an unknown outcome and five features.
+
+# Number of rows in the data frame (1 in this case)
+n <- 1
+
+# Create a data frame with one row and columns for the outcome and features
+# The outcome is set to "?" indicating it is unknown, and features are labeled as "X_1" to "X_5"
+tmp <- data.frame(outcome=rep("?",n), 
+                  feature_1 = paste0("X_1"),
+                  feature_2 = paste0("X_2"),
+                  feature_3 = paste0("X_3"),
+                  feature_4 = paste0("X_4"),
+                  feature_5 = paste0("X_5"))
+tmp %>% knitr::kable(align="c")
+```
+
+To _build a model_ that provides a prediction for any set of values $X_1=x_1, X_2=x_2, \dots, X_5=x_5$, we collect data for which we know the outcome. 
+
+```{r, echo=FALSE}
+n <- 5
+tmp <- data.frame(outcome = paste0("Y_", 1:n), 
+                  feature_1 = paste0("X_",1:n,",1"),
+                  feature_2 = paste0("X_",1:n,",2"),
+                  feature_3 = paste0("X_",1:n,",3"),
+                  feature_4 = paste0("X_",1:n,",4"),
+                  feature_5 = paste0("X_",1:n,",5"))
+tmp %>% knitr::kable()
+```
+
+We use the notation $\hat{Y}$ to denote the prediction. We use the term _actual outcome_ to denote what we ended up observing. So we want the prediction $\hat{Y}$ to match the _actual outcome_. 
+
+### Exercise:
+
+Read the introduction section of the “Scalable and accurate deep learning with electronic health records” paper by Rajkomar.
+
+A) What is the most time consuming aspect of developing a predictive model, according to the authors?
+
+B) How have “traditional modeling approaches" dealt with high numbers of predictor variables, according to the authors?
+
+## Categorical versus Continuous
+
+The outcome $Y$ can be categorical (which digit, what word, spam or not spam, pedestrian or empty road ahead) or continuous (movie ratings, housing prices, stock value, distance to pedestrian). The concepts and algorithms we learn here apply to both. However, there are some differences in how we approach each case so it is important to distinguish between the two. 
+
+When the outcome is categorical we refer to the task as _**classification**_. Our predictions will be categorical just like our outcomes and they will be either correct or incorrect. When the outcome is continuous we will refer to the task as _**prediction**_. In this case our predictions will not be either right or wrong but some distance away from the actual outcome. This term can be confusing since we call $\hat{Y}$ our prediction even when it is a categorical outcome. However, throughout the lecture, the context will make the meaning clear. 
+
+Note that these terms vary among courses, textbooks, and other publications. Often _prediction_ is used for both categorical and continuous and _regression_ is used for the continuous case. Here we avoid using _regression_ to avoid confusion with our previous use of the term _linear regression_. In most cases it will be clear if our outcomes are categorical or continuous so we will avoid using these terms when possible.
+
+The first part of this module deals with categorical values and the second with continuous ones.
+
+# Accuracy and the confusion matrix  
+
+Here we consider a prediction task based on the height data. 
+
+```{r}
+# Load the heights dataset from the dslabs package.
+# This dataset contains information on the heights and sex of individuals.
+data(heights)
+```
+
+We want to predict sex based on height. It is not a realistic example but rather one we use as an illustration that will help us start to understand the main concepts. We start by defining the outcome and predictor. In this example we have only one predictor.
+
+```{r}
+# Extract the outcome variable 'sex' from the heights dataset.
+y <- heights$sex
+
+# Extract the predictor variable 'height' from the heights dataset.
+x <- heights$height
+```
+
+This is clearly a categorical outcome since $Y$ can be `Male` or `Female`.
+Predicting $Y$ based on $X$ will be a hard task because male and female heights are not that different relative to within group variability. But can we do better than guessing? We can code a random guess like this:
+
+```{r}
+# Set the seed for reproducibility so that the random sampling results can be replicated.
+set.seed(1)
+
+# Determine the number of observations in the outcome variable 'y'.
+N <- length(y)
+
+# Generate random predictions for 'y' by randomly sampling from the categories "Male" and "Female".
+# The 'replace = TRUE' argument allows sampling with replacement.
+y_hat <- sample(c("Male", "Female"), N, replace = TRUE)
+```
+
+First, we will quantify what it means to do better. The confusion matrix breaks down the correct and incorrect classifications:
+
+```{r}
+# Create a confusion matrix to compare the predicted values 'y_hat' with the actual values 'y'.
+# This table shows the counts of true positives, false positives, true negatives, and false negatives.
+confusion_matrix <- table(predicted = y_hat, actual = y)
+
+# Display the confusion matrix
+confusion_matrix
+```
+
+The _accuracy_ is simply defined as the overall proportion that is predicted correctly:
+
+```{r}
+# Calculate the accuracy of the predictions by comparing 'y_hat' with 'y'.
+# The 'mean(y_hat == y)' expression evaluates to TRUE (1) when the prediction is correct and FALSE (0) otherwise.
+# Taking the mean of these logical values gives the proportion of correct predictions.
+accuracy <- mean(y_hat == y)
+
+# Display the accuracy
+accuracy
+```
+
+Not surprisingly, by guessing, our accuracy is about 50%. No matter the actual sex, we guess female half the time. Can we do better? We know males are slightly taller, 
+
+```{r}
+# Group the heights dataset by sex and calculate the mean and standard deviation of height for each group.
+# This helps us understand the distribution of heights for males and females.
+heights %>% group_by(sex) %>% summarize(mean(height), sd(height))
+```
+
+so let's try to use our covariate. Let's try the approach "predict `Male` if height is within two standard deviations from the average male" (69.31 - 2(3.61)) $\approx$ 62:
+
+```{r}
+# Apply the prediction rule: if height is greater than or equal to 62, predict 'Male'; otherwise, predict 'Female'.
+y_hat <- ifelse(x >= 62, "Male", "Female")
+```
+
+The accuracy goes way up from 0.50 now:
+
+```{r}
+# Calculate the accuracy of the new prediction rule by comparing 'y_hat' with the actual values 'y'.
+accuracy <- mean(y == y_hat)
+accuracy
+```
+
+But can we do better? We can examine the accuracy obtained for other cutoffs and then pick the value that provides the best results. However, if this optimization feels a bit like cheating to you, you are correct. By assessing our approach on the same dataset that we use to optimize our algorithm, we will end up with an over-optimistic view of our algorithm. In a later section we cover this issue, referred to as _**overtraining**_ (or _**overfitting**_) in more detail.
+
+# Training and test sets
+
+The general solution to this problem is to split the data into training and testing sets. We build the algorithm using the training data and test the algorithm on the test set. In a later section we will learn more systematic ways to do this, but here we will split the data in half.
+
+We now introduce the `caret` package that has several useful functions for building and assessing machine learning methods. For example, the `createDataPartition` automatically generates indexes. The argument `times` is used to define how many random samples of indexes to return, the argument `p` is used to define what proportion of the data to index, and the argument `list` is used to decide if we want the indexes returned as a list or not.
+
+
+```{r, message=FALSE}
+# Set the seed for reproducibility
+set.seed(1)
+
+# The createDataPartition function returns a set of indexes for the training set.
+# `times = 1` specifies a single random sample.
+# `p = 0.5` specifies that 50% of the data should be in the training set.
+# `list = FALSE` specifies that the result should be returned as a matrix instead of a list.
+train_index <- createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+
+# Display the first few indexes for the training set
+head(train_index)
+```
+
+We can use this index to define the training and test sets:
+
+```{r}
+# Create the training set by subsetting the heights data
+train_set <- heights[train_index, ]
+
+# Create the test set by subsetting the heights data (with the inverse index used for training)
+test_set <- heights[-train_index, ]
+
+# Display the first few rows of the training and test set
+head(train_set)
+head(test_set)
+```
+
+Now let's use the train set to examine the accuracy of 11 different cutoffs:
+
+```{r}
+# Define a sequence of cutoff values from 60 to 70
+cutoff <- seq(60, 70)
+
+# Calculate the accuracy for each cutoff value
+# The map_dbl function applies a function to each element of the cutoff sequence and returns a vector of results.
+# For each cutoff value `x`, we apply the prediction rule: if height is greater than or equal to `x`, predict 'Male'; otherwise, predict 'Female'.
+# We then calculate the accuracy of these predictions on the training set by comparing them with the actual sex values.
+accuracy <- map_dbl(cutoff, function(x){
+  y_hat <- ifelse(train_set$height >= x, "Male", "Female")
+  mean(y_hat == train_set$sex)
+})
+```
+
+We can make a plot showing the accuracy on the training set for males and females.
+
+```{r accuracy-v-cutoff, echo=FALSE}
+# Create a data frame with the cutoff values and corresponding accuracies
+accuracy_data <- data.frame(cutoff, accuracy)
+
+# Use ggplot2 to create a plot of accuracy vs. cutoff values
+ggplot(accuracy_data, aes(cutoff, accuracy)) + 
+  geom_point() +  # Add points for each cutoff value
+  geom_line() +   # Connect the points with lines
+  theme_minimal()  # Use a minimal theme for the plot
+```
+
+We see that the maximum value is:
+
+```{r}
+# Find the maximum accuracy value from the computed accuracies
+max_accuracy <- max(accuracy)
+
+# Display the maximum accuracy
+max_accuracy
+```
+
+much higher than 0.5, and it is maximized with the cutoff:
+
+```{r}
+# Identify the cutoff value that gives the maximum accuracy
+# `which.max(accuracy)` returns the index of the maximum accuracy value in the accuracy vector
+# `cutoff[which.max(accuracy)]` returns the corresponding cutoff value
+best_cutoff <- cutoff[which.max(accuracy)]
+best_cutoff
+```
+
+Now we can test this cutoff on our test set to make sure our accuracy is not overly optimistic:
+
+```{r}
+# Apply the best cutoff value to the test set to make predictions
+# If height is greater than the best cutoff, predict 'Male'; otherwise, predict 'Female'
+y_hat <- ifelse(test_set$height > best_cutoff, "Male", "Female")
+
+# Calculate the accuracy of the predictions on the test set by comparing 'y_hat' with the actual sex values
+test_accuracy <- mean(y_hat == test_set$sex)
+
+# Display the test accuracy
+test_accuracy
+```
+
+We see that it is lower than the accuracy observed for the training set, but it is still better than guessing. And by testing on a dataset that we did not train on, we know we did not cheat.
+
+# Validation sets
+
+Machine learning is iterative by nature. We want to improve our model, tuning and evaluating as we go. This leads us to a problem. Using our test set to iteratively improve our model would be cheating. It is supposed to be “held out”, not used for training! So what do we do?
+
+The answer is that we typically partition off part of our training set to use for validation. The “validation set” can be used to iteratively improve our model, allowing us to save our test set for the *final* evaluation.
+
+![Figure 2: Validation set](training_val_set.png)
+
+# Cross validation
+
+Why stop at one validation set? With sampling, we can create many training sets and many validation sets, each slightly different. We can then average our findings over the partitions to give an estimate of the model’s predictive performance
+
+The family of resampling methods used for this is known as “cross validation”. It turns out that one major benefit to cross validation is that it helps us to build more robust models.
+
+If we train our model on a single set of data, the model may learn rules that are overly specific (e.g. “all patients aged 63 years survive”). These rules will not generalise well to unseen data. When this happens, we say our model is “overfitted”.
+
+If we train on multiple, subtly-different versions of the data, we can identify rules that are likely to generalise better outside out training set, helping to avoid overfitting.
+
+Two popular of the most popular cross-validation methods:
+
+- K-fold cross validation
+- Leave-one-out cross validation
+
+# K-fold cross validation
+
+In K-fold cross validation, “K” indicates the number of times we split our data into training/validation sets. With 5-fold cross validation, for example, we create 5 separate training/validation sets.
+
+![Figure 3: 5-fold validation](k_fold_cross_val.png). 
+
+With K-fold cross validation, we select our model to evaluate and then:
+
+1. Partition the training data into a training set and a validation set. An 80%, 20% split is common.
+2. Fit the model to the training set and make a record of the optimal parameters.
+3. Evaluate performance on the validation set.
+4. Repeat the process 5 times, then average the parameter and performance values.
+
+When creating our training and test sets, we needed to be careful to avoid data leaks. The same applies when creating training and validation sets.
+
+# Prevalence, Sensitivity and Specificity
+
+The prediction rule we developed in the previous section was to predict `Male` if the student is taller than 65 inches. Given that the average female is about 65 inches, this prediction rule is bound to make many errors. If a student is the height of the average female, shouldn't we predict `Female`? A closer look at the confusion matrix reveals the problem. We look at the proportion of calls for each sex:
+
+```{r, message=FALSE, warning=FALSE}
+# Evaluate the accuracy of predictions by sex.
+# Add the predictions ('y_hat') to the test set and group by 'sex'.
+# Calculate the accuracy for each group by comparing the predictions with the actual sex values.
+accuracy_by_sex <- test_set %>% 
+  mutate(y_hat = y_hat) %>%
+  group_by(sex) %>% 
+  summarize(accuracy = mean(y_hat == sex))
+
+# Display the accuracy by sex
+accuracy_by_sex
+```
+
+There is an imbalance in the accuracy for males and females: too many females are predicted to be male. The reason this does not affect our overall accuracy is because the _prevalence_ of males in this dataset is high:
+
+```{r}
+# Calculate the prevalence of males in the original dataset.
+# Prevalence is the proportion of the total number of observations that belong to the 'Male' category.
+prev_males <- mean(y == "Male")
+prev_males
+```
+
+So the high percentage of mistakes made for females is outweighed by the gains in correct calls for men. This can be a big problem in machine learning. **If your training data is biased in some way, you are likely to develop algorithms that are biased as well. This is one of the reasons we look at metrics other than overall accuracy when evaluating a machine learning algorithm**.
+
+
+To evaluate an algorithm in a way that prevalence does not cloud our assessment, we can study _sensitivity_ and _specificity_ separately. These terms are defined for a specific category. Once we specify a category of interest then we can talk about positive outcomes, $Y=1$, and negative outcomes, $Y=0$.
+
+In general, _sensitivity_ is defined as the ability of an algorithm to predict a positive outcome when the actual outcome is $Y=1$. Because an algorithm that calls everything $\hat{Y}=1$ has perfect sensitivity, sensitivity on its own is not enough to judge an algorithm. For this reason we also examine _specificity_, which is generally defined as the ability of an algorithm to *only* call a $\hat{Y}=1$ when the case is actually $Y=1$. We can summarize in the following way:
+
+* High sensitivity: $Y=1 \implies \hat{Y}=1$
+* High specificity: $\hat{Y} = 1 \implies Y=1$ or equivalently $Y=0 \implies \hat{Y}=0$
+
+To provide a precise definition we name the four entries of the confusion matrix:
+
+```{r, echo=FALSE}
+# Create a 2x2 matrix to define the four entries of the confusion matrix.
+# The confusion matrix shows the counts of true positives, false negatives, false positives, and true negatives.
+mat <- matrix(c("True positives (TP)", "False negatives (FN)", 
+                "False positives (FP)", "True negatives (TN)"), 2, 2)
+
+# Assign column names to the confusion matrix to represent the actual outcomes.
+colnames(mat) <- c("Positive", "Negative")
+
+# Assign row names to the confusion matrix to represent the predicted outcomes.
+rownames(mat) <- c("Predicted positve", "Predicted negative")
+
+# Convert the matrix to a data frame and display it
+as.data.frame(mat) %>% knitr::kable()
+```
+
+Sensitivity is typically quantified by $TP/(TP+FN)$, or the proportion of positives `TP+FN` that are called positives `TP`. This quantity is referred to as the _true positive rate_ (TPR) or _**recall**_. 
+
+Specificity is typically quantified as $TN/(TN+FP)$ or the proportion of negatives `TN+FP` that are called negatives `TN`. This quantity is called the true negative rate (TNR). Specificity is sometimes quantified with $TP/(TP+FP)$, the proportion of outcomes called positives $TP+FP$ that are actaully positives $TP$. This quantity is referred to as _**precision**_. Note that unlike TPR and TNR, precision depends on prevelance since higher prevalence implies you can get higher precision, even when guessing.
+
+The `confusionMatrix` function in the caret package computes all these metrics for us once we define what a positive is. The function expects factors as input and coerces characters into factors. The first level is considered the positives. Here `Female` is the first level because it comes before `Male` alphabetically.
+
+
+```{r}
+# Compute the confusion matrix using the `confusionMatrix` function from the caret package.
+# The `data` argument is the predicted values (`y_hat`), which are coerced into factors using `as.factor`.
+# The `reference` argument is the actual values (`test_set$sex`).
+# The `confusionMatrix` function calculates various metrics such as accuracy, sensitivity, specificity, and more.
+confusion_matrix <- confusionMatrix(data = as.factor(y_hat), reference = test_set$sex)
+
+# Display the confusion matrix and associated metrics
+confusion_matrix
+```
+
+We can see that the high accuracy is possible despite relatively low sensitivity. The reason this can happen is the low prevalence: because the proportion of females is low, incorrectly classifying them as males does not lower the accuracy as much as it is increased by most males being predicted as males. This is an example of why it's important to examine sensitivity and specificity and not just accuracy. 
+
+However, it is often useful to have one number summary, for example for optimization purposes. One metric is simply the average of specificity and sensitivity, referred to as  _**balanced accuracy**_. However, because these are rates, it is more appropriate to compute the harmonic average of specificity and sensitivity. In fact the _**F$_1$-score**_, a widely used one number summary, is the harmonic average of precision and recall:
+
+$$
+\frac{1}{\frac{1}{2}\left(\frac{1}{\mbox{recall}} + 
+    \frac{1}{\mbox{precision}}\right) }
+$$
+
+which can be rewritten as
+
+$$
+2\frac{\mbox{precision} \cdot \mbox{recall}}
+{\mbox{precision} + \mbox{recall}}
+$$
+
+However, depending on the context, some types of errors are more costly than others. For example, in the case of plane safety it is much more important to maximize sensitivity over specificity: failing to predict a plane will malfunction before it crashes is a much more costly error than grounding a plane when in fact the plane is in perfect condition. In a capital murder criminal case the opposite is true: a false positive can lead to killing an innocent person. 
+
+The F$_1$-score can be adapted to weigh specificity and sensitivity differently. The way it is implemented is by defining $\beta$ to represent how much more important sensitivity is compared to specificity and consider a weighted harmonic average:
+
+$$
+\frac{1}{\frac{\beta^2}{1+\beta^2}\frac{1}{\mbox{recall}} + 
+    \frac{1}{1+\beta^2}\frac{1}{\mbox{precision}} }
+$$
+
+
+The `F_meas` function in the caret package computes this summary with `beta` defaulting to 1.
+
+We can reassess our algorithm above using the F-score instead:
+
+```{r}
+# Define a sequence of cutoff values from 60 to 70
+cutoff <- seq(60, 70)
+
+# Calculate the F1-score for each cutoff value using the training set
+# The map_dbl function applies a function to each element of the cutoff sequence and returns a vector of results.
+# For each cutoff value `x`, we apply the prediction rule: if height is greater than `x`, predict 'Male'; otherwise, predict 'Female'.
+# The F_meas function computes the F1-score, which is a measure of the test's accuracy considering both precision and recall.
+F1_score <- map_dbl(cutoff, function(x){
+  y_hat <- ifelse(train_set$height > x, "Male", "Female")
+  F_meas(data = factor(y_hat), reference = factor(train_set$sex))
+})
+```
+
+As before, we can plot the F1_score versus the cutoffs:
+
+```{r, echo=FALSE}
+# Create a data frame with the cutoff values and corresponding F1 scores
+f1_data <- data.frame(cutoff, F1_score)
+
+# Use ggplot2 to create a plot of F1-score vs. cutoff values
+ggplot(f1_data, aes(cutoff, F1_score)) + 
+  geom_point() +  # Add points for each cutoff value
+  geom_line() +   # Connect the points with lines
+  theme_minimal()  # Use a minimal theme for the plot
+```
+
+We see that it is maximized at:
+
+```{r}
+# Find and display the maximum F1 score
+max_F1 <- max(F1_score)
+max_F1
+```
+
+when we use cutoff:
+
+```{r}
+# Find and display the cutoff value that gives the maximum F1 score
+best_cutoff <- cutoff[which.max(F1_score)]
+best_cutoff
+```
+
+As discussed, the optimal cut-off will depend on the use case, but you can see how this approach can be used to select a threshold.
+
+# Summary
+
+In this workshop, we explored key concepts in machine learning with a focus on predictive modeling, including:
+
+- Common terminology and notation
+- Supervised vs. Unsupervised Learning
+- Training, validation, and test sets
+- Information leakage
+- Cross validation
+- Confusion matrices
+- Evaluation metrics
+
+# What's next
+
+In the next workshop, we will begin looking at models. We will start with a linear regression, a type of model borrowed from statistics that has all of the hallmarks of machine learning (so let’s call it a machine learning model!).
+
+Regression models often outperform more sophisticated modelling approaches, and are almost always included as a baseline when presenting the results of a new model (as they are in the Rajkomar paper).
+
+We'll also introduce Area Under the Receiver Operating Characteristic Curve (AUROC) and bootstrapping, two popular methods in machine learning.
+
+
+
