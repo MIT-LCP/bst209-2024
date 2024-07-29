@@ -7,20 +7,14 @@ Welcome to the BST 209 course repository! You can find and download all course m
 # Instructors
 
 - Leo Celi: lceli@mit.edu
-
 - Heather Mattie: hemattie@hsph.harvard.edu 
-
 - Chrystinne Fernandes: cof@mit.edu
-
 - Tom Pollard: tpollard@mit.edu
 
 # Teaching Assistants
 
-- To be confirmed
-
-# Office hours
-
-- To be confirmed
+- Fredrik Willumsen Haug: fredrik_willumsenhaug@college.harvard.edu
+- Serena Tsai: ytsai@hms.harvard.edu
 
 # Downloading course materials using Git with RStudio
 
@@ -34,7 +28,7 @@ and paste in the link you just copied. Under "Create Project as
 Subdirectory of", browse and select a folder where you want the course
 materials to go.
 
-3. Press "Create Project". This will create a folder called `bst209`
+3. Press "Create Project". This will create a folder called `bst209-2024`
 in the folder you selected in step 2.
 
 4. Now, you can open this project using the projects tab in the upper
@@ -52,7 +46,6 @@ step 4 above to open the project when you launch RStudio.
 You can read more about RStudio projects here:
 https://support.rstudio.com/hc/en-us/articles/200526207-Using-Projects
 
-
 # Updating the course repo
 
 Once you cloned the course repository and want to get updates, you must
@@ -61,7 +54,6 @@ use `git pull` to get updates.
 In RStudio, if you followed the instructions above, simply navigate
 to the Git tab and press the Pull button. In terminal / Git bash, use
 `cd` to navigate to the `bst209-2024` folder, then run `git pull`.
-
 
 # Taking notes on course materials
 
