@@ -26,4 +26,5 @@ install.packages("GGally") # Grammar of graphics
 install.packages("tree") # Tree models
 install.packages("randomForest") # Random forests
 install.packages("caret") # Models
+install.packages("cluster") # Clustering
 ```
