@@ -1,0 +1,273 @@
+---
+title: 'Regularization'
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+library(tidyverse)
+library(caret)
+library(glmnet)
+library(GGally)
+library(dslabs)
+library(tableone)
+library(knitr)
+ds_theme_set()
+```
+
+The prediction error for any machine learning model can be decomposed into 3 components: **bias**, **variance**, and **irreducible error**. 
+
+> Total error = Variance + Bias squared + Irreducible Error
+
+In mathematical terms:
+
+$$
+\mbox{E}[y_0 - \hat f(x_0)]^2 = Var(\hat f(x_0)) + [Bias(\hat f(x_0))]^2 + Var(\epsilon).
+$$
+
+Irreducible error is the measure of noise in our data that cannot be reduced by improving the model. However, we can create a model with low bias and low variance.
+
+These quantities are not independent; decreasing one will often increase the other, leading to the bias-variance tradeoff. We need to find a balance point to minimize both bias and variance.
+
+# Bias-Variance Tradeoff 
+
+* `Bias`: The error introduced by approximating a real-life problem, which may be complex, by a simpler model. For example, linear regression assumes a linear relationship between $Y$ and $X_1, X_2,...,X_p$, which may not hold true, resulting in bias. In other words, building a model that is too simple for the task at hand will result in high bias, whereas a more flexible (complex) model will decrease bias. 
+
+* `Variance`: The amount by which $\hat f$ would change if we estimated it using a different training dataset. High variance indicates that small changes in the training data can lead to large changes in $\hat f$. In general, more flexible statistical methods have higher variance.
+
+![](./bias-var-graphs.png)
+
+As a general rule, more flexible methods increase variance but decrease bias. Initially, increasing flexibility reduces bias faster than it increases variance, leading to lower expected test set error. However, beyond a certain point, further increasing flexibility increases variance significantly.
+
+Good test set performance requires low variance and low squared bias. The challenge is finding a method that minimizes both. 
+
+Often it is easy to obtain a method with extremely low bias but high variance (for instance, by drawing a curve that passes through every single training observation) or a method with very low variance but high bias (by fitting a horizontal line to the data that does not follow a linear pattern). This is the trade-off.
+
+# Regularization
+
+In regression, the standard linear model $Y = \beta_0 + \beta_1X_1 + ... + \beta_pX_p$ is typically fit using ordinary least squares (OLS)
+
+Many datasets, however, have many predictors, some of which may not be predictive, increasing variance. 
+
+Regularization techniques help to improve model performance and interpretability, while decreasing variance. We'll look at a popular approach for regularization known as "shrinkage".
+
+## Shrinkage 
+
+Shrinkage methods reduce variance by shrinking coefficient estimates toward zero. Examples include ridge regression and lasso.
+
+### Ridge regression
+
+If we have $n$ observations and want to predict a response variable $Y$ using linear regression on $p$ covariates $X_1, X_2,...,X_p$, we are trying to find the coefficients $\beta_0, \beta_1, \beta_2, ..., \beta_p$ ($\beta_0$ is the intercept) that minimize the residual sum of squares (RSS): 
+
+$$
+\text{RSS} = \sum_{i=1}^n \left( y_i - \beta_0 - \sum_{j=1}^p \beta_j x_{ij} \right)^2
+$$
+
+Ridge regression modifies this by adding a penalty term to the RSS to shrink the coefficients:
+
+$$
+\sum_{i=1}^n \left( y_i - \beta_0 - \sum_{j=1}^p \beta_j x_{ij} \right)^2 + \lambda \sum_{j=1}^p \beta_j^2
+$$
+
+The penalty term $\lambda \sum_{j=1}^p \beta_j^2$ is known as the L2 norm. This term shrinks the coefficients towards zero, which helps to reduce variance. The tuning parameter $\lambda$ controls the trade-off between fitting the data well (low RSS) and keeping the coefficients small (low variance).
+
+- When $\lambda = 0$, ridge regression is equivalent to OLS, leading to unbiased but high variance estimates.
+- As $\lambda$ increases, the coefficients shrink more, increasing bias but reducing variance.
+
+### Lasso
+
+Lasso regression is similar to ridge regression but uses a different penalty term:
+
+$$
+\sum_{i=1}^n \left( y_i - \beta_0 - \sum_{j=1}^p \beta_j x_{ij} \right)^2 + \lambda \sum_{j=1}^p |\beta_j|
+$$
+So instead of summing over the squares of the $\beta_j$s (the $L_2$ norm) in the shrinkage penalty term, lasso sums over their absolute values (the $L_1$ norm).
+
+The penalty term $\lambda \sum_{j=1}^p |\beta_j|$ is known as the L1 norm. Unlike ridge regression, which shrinks coefficients continuously, lasso can shrink some coefficients to *exactly* zero, effectively performing variable selection.
+
+- Lasso encourages sparsity, making the model easier to interpret by selecting a smaller subset of predictors.
+- The choice of $\lambda$ balances the trade-off between variance reduction and bias introduction.
+-  As $\lambda$ increases, more and more of the coefficients will be exactly zero, so unlike ridge regression, lasso performs variable selection!
+
+Because lasso models for a given problem tend to have fewer predictors, they are sometimes called *sparse models* and are often easier to interpret than ridge regression models.
+
+
+## $K$-fold cross-validation
+
+Cross-validation (CV) is a simple but powerful machine learning technique. We present it here in the context of finding the best value of $\lambda$ for ridge regression and lasso, but it can also be used for selecting other model tuning parameters or assessing model performance. $K$-fold cross validation proceeds as follows: 
+
+1. Choose a grid of $\lambda$ values that you would like to try. 
+2. Randomly split your dataset into $K$ *folds*. Popular choices for $K$ are 10, 5 or even the number of observations $n$. 
+3. For each fold:
+    a. Use the fold as the validation set.
+    b. Use the remaining folds as the training set.
+    c. Fit the model for each $\lambda$ value.
+    d. Evaluate the model and calculate the error. 
+4. Compute the mean error for each $\lambda$.
+5. Select the $\lambda$ with the smallest mean error.
+6. Refit the model using the entire dataset with the chosen $\lambda$.
+
+## Example: MEPS hospitalization data
+
+The Medical Expenditure Panel Survey (MEPS), conducted by the Agency for Healthcare Research and Quality, contains longitudinal information on study participants.
+
+Variables include age; sex; race; marital status; family income; education; type of insurance coverage; prior diagnosis with angina, arthritis, asthma, cancer, coronary heart disease, diabetes, emphysema, heart attack, high cholesterol, high blood pressure, heart disease, other heart disease, or stroke; perceived general and mental health status; and any hospitalization in 2016. 
+
+We aim to predict 2017 hospitalization rates based on 2016 data. The data loaded below is a subset of 1000 individuals from the MEPS 2016–2017 panel data who were aged 18 years or older in 2016. This example is loosely adapted from *Statistics for Health Data Science*, by Ruth Etzioni, Micha Mandel, and Roman Gulati (2020), For more information about MEPS and to pull the entire original database, please go [here](https://roman-gulati.github.io/statistics-for-health-data-science/). 
+
+```{r}
+# Read in subset of MEPS data
+load("meps.rData")
+# Predictor variables
+predictors = setdiff(names(meps), "Anyhosp2017")
+```
+
+## Exploring the Data
+
+Before modeling, it is useful to explore and summarize the data. If you look at most clinical journals, most papers will try to characterize the study patient population with what is sometimes called a "Table 1".
+
+R has a nice package to do this called `tableone` (there is also one for Python).  Its use is straightforward -- pass it a data.frame with the names of the columns you would like to report.
+
+```{r}
+# Create a table summarizing the dataset
+table1 <- CreateTableOne(vars = predictors, data = meps, strata = "Sex")
+kableone(table1)
+```
+
+We'll now prepare a "design matrix" (tabular structure containing our predictor variables) and split it into training and test sets.
+
+Note that the algorithm we will be using, `glmnet`, expects you to pass in the predictors as a numeric model matrix. It can't handle categorical variables coded as factors. The `model.matrix` function creates the appropriate model matrix by converting factors into dummy variables as necessary. 
+
+In the call below, `~ .-1` tells `model.matrix` to include all predictors except the intercept in the design matrix (by default, `glmnet` will include an intercept, so it's unneeded here). There are a total of 43 columns in the model matrix, compared to the 25 original predictors that include factor categorical variables. As usual, we split the data into 50% training and 50% test. 
+
+```{r}
+# Create design matrix for predictors (except for intercept)
+X = model.matrix(~ .-1, meps %>% select(all_of(predictors)))
+# Response variable
+y = meps$Anyhosp2017
+
+# Split the data into a training set and a test set
+set.seed(219)
+train_idx = createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+X_train = X[train_idx,]
+y_train = y[train_idx]
+X_test = X[-train_idx,]
+y_test = y[-train_idx]
+```
+
+We're ready to try fitting some models using `glmnet`! Our response variable is binary, so we want to specify `family = "binomial"`, similarly to the `glm` function. (The default is `"gaussian"`, for regression.) If we pass in `lambda = 0`, this call is equivalent to the usual logistic regression. (Why?)
+
+```{r}
+fit_logistic = glmnet(X_train, y_train, family = "binomial", lambda = 0)
+```
+
+In order to actually shrink our coefficients, we need to pass in one or more non-zero values to the `lambda` argument. Or, if we don't specify anything at all, `glmnet` will automatically generate a grid of 100 $\lambda$ values to try. The key parameter to watch out for is `alpha`. If we want to fit a ridge regression model, we set `alpha = 1`. If we want lasso, we set `alpha = 0`. 
+
+```{r}
+fit_ridge = glmnet(X_train, y_train, family = "binomial", alpha = 1)
+fit_lasso = glmnet(X_train, y_train, family = "binomial", alpha = 0)
+```
+
+`glmnet` has many, many more arguments that you can play around with, but the defaults are usually reasonable for most scenarios. Calling `plot` on a fitted `glmnet` object will plot the coefficients for the sequence of $\lambda$ values used by the model.
+
+Setting `xvar = "lambda"` plots the log of the $\lambda$s on the x-axis; see the documentation for `plot.glmnet` for other x-axis options. The ridge regression coefficient plot shows most of the coefficients starting out at non-zero values for small values of lambda, but they eventually all get shrunk to zero when lambda is sufficiently large. 
+
+```{r}
+plot(fit_ridge, xvar = "lambda")
+```
+
+You can see a similar trend for the lasso coefficient plot, but the coefficients get shrunk to zero much more aggressively. 
+
+```{r}
+plot(fit_lasso, xvar = "lambda")
+```
+
+## Selecting the tuning parameter
+
+You can write a cross-validation loop by hand, but `cv.glmnet` is a built-in function that will run cross-validation to identify the best tuning parameter for your model. The model specification and arguments are very similar to those for `glmnet`. By default, `cv.glmnet` uses 10-fold cross-validation and deviance as the cross-validation error for binary responses, but you can specify different values to the `nfolds` and `type.measure` parameters, respectively. 
+
+Let's try this for ridge regression. Again, you must specify `alpha = 0` for the function to understand that you want a ridge model. Running `plot` on the fitted `cv.glmnet` object displays a plot of the CV error against $\log(\lambda)$. The dashed vertical line on the left indicates the values of $\lambda$ at which the CV error is minimized.
+
+The dashed vertical line on the right indicates the value of $\lambda$ that is one standard error bigger than the one that minimizes the CV error. You may prefer to use `lambda.1se`, since it is slightly larger and imposes a stronger penalty, to avoid overfitting. You can access these two values of lambda in the `lambda.min` and `lambda.1se` attributes stored in the `cv.glmnet` object. 
+
+```{r}
+cv_ridge = cv.glmnet(X_train, y_train, family = "binomial", alpha = 0)
+plot(cv_ridge)
+```
+
+By default, the `coef` and `predict` functions for `cv.glmnet` use the model fit to `lambda.1se`, but you can tell them to use `lambda.min` by passing in `s = "lambda.min"`. We can see that only about two percent of the coefficients have been shrunk to exactly zero for both `lambda.min` and `lambda.1se`. 
+
+```{r}
+ridge_zero_coef = cbind(
+  lambda = c(cv_ridge$lambda.min, cv_ridge$lambda.1se), 
+  "% 0 coef" = c(mean(coef(cv_ridge, s = "lambda.min") == 0), 
+                 mean(coef(cv_ridge) == 0)) * 100)
+rownames(ridge_zero_coef) = c("min", "1se")
+ridge_zero_coef
+```
+
+For the lasso cross-validation, the `lambda.min` model shrinks 70% of the coefficients to zero and the `lambda.1se` model shrinks 86% of the coefficients to zero. This means that only 6 predictors remain in the later case! 
+
+```{r}
+cv_lasso = cv.glmnet(X_train, y_train, family = "binomial", alpha = 1)
+plot(cv_lasso)
+
+lasso_zero_coef = cbind(
+  lambda = c(cv_lasso$lambda.min, cv_lasso$lambda.1se), 
+  "% 0 coef" = c(mean(coef(cv_lasso, s="lambda.min") == 0), 
+                 mean(coef(cv_lasso) == 0)) * 100)
+rownames(lasso_zero_coef) = c("min", "1se")
+lasso_zero_coef
+```
+
+The bars in this visualization show the coefficient sizes for the non-regularized logistic regression model and the ridge and lasso models fit with the `lambda.1se` values chosen by cross-validation. Many of the logistic regression coefficients exceed the `c(-1, 1)` y-axis limits in the plot.
+
+While the ridge coefficient estimates are much smaller than the logistic regression estimates, they are almost all non-zero. On the other hand, lasso for this value of $\lambda$ shrinks most of the coefficients to zero. 
+
+```{r}
+coef_tab = data.frame(Predictor=rownames(coef(fit_logistic)),
+                      Logistic=as.vector(coef(fit_logistic)),
+                      Ridge=as.vector(coef(cv_ridge)),
+                      Lasso=as.vector(coef(cv_lasso)))
+
+coef_tab %>% gather(Model, Coefficient, -Predictor) %>% 
+  filter(Predictor != '(Intercept)') %>% 
+  mutate(Predictor=factor(Predictor, levels=unique(Predictor)),
+         Model=factor(Model, levels=c('Logistic', 'Ridge', 'Lasso'))) %>% 
+  ggplot() + geom_hline(aes(yintercept=0)) + 
+  geom_bar(aes(x=Predictor,
+               y=Coefficient,
+               fill=Model),
+           stat='identity',
+           position='dodge') + 
+  scale_x_discrete(name='Predictor') + 
+  scale_y_continuous(name='Coefficient') + 
+  coord_cartesian(ylim=c(-1, 1)) + 
+  theme(legend.position=c(0.8, 0.2), axis.text.x=element_blank())
+```
+
+
+## Root mean-square error (RMSE)
+
+To evaluate our three models' performances on the test set, we will consider the root mean square error (RMSE). If $\hat{y_i}$ is our predicted probability and $y_i$ is the true label (hospitalized in 2017 or not), then we would prefer the model that minimizes: 
+
+$$\text{RMSE} = \sqrt{\frac{1}{n} \sum_{i=1}^n \left( y_{i} - \hat{y}_{i} \right)^2}$$
+
+We can interpret this similarly to a standard deviation: the RMSE is the typical error that we make when predicting hospitalization. Various R packages include built-in functions to return the RMSE, but it is straightforward to write our own RMSE function and apply it to the test set predictions: 
+
+```{r}
+RMSE = function(true_labels, preds){
+  sqrt(mean((true_labels - preds)^2))
+}
+
+sapply(list(Logistic = fit_logistic, Ridge = cv_ridge, Lasso = cv_lasso), 
+       function(mod) {
+  preds = predict(mod, newx = X_test, type = "response")
+  return(RMSE(y_test, preds))
+})
+```
+
+While it is true that the logistic regression test RMSE is the worst (largest) and the lasso test RMSE is the best (smallest), all three models appear to be performing similarly well.
+
+Probably the greatest advantage of using the lasso model in this case is not so much due to performance gains as it is having a much smaller and more interpretable model. 
