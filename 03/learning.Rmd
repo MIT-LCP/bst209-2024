@@ -166,3 +166,7 @@ A loss function quantifies the goodness of fit of a model (i.e. how closely its 
 B) One example of a loss function is mean squared error (M.S.E.).  
 C) Objective function, error function, and cost function.  
 D) When a model is trained, we are attempting to find the optimal model parameters in process known as "optimisation".
+
+## What's next?
+
+Now that we’ve touched on how machines learn, we’ll tackle the problem of predicting the outcome of patients admitted to intensive care units in hospitals across the United States.

@@ -1,0 +1,127 @@
+---
+title: 'Data preparation'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(digits=3)
+set.seed(1)
+library(caret)
+library(dslabs)
+library(e1071)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(tableone)
+ds_theme_set()
+```
+
+Critical care units are home to sophisticated monitoring systems, helping carers to support the lives of the sickest patients within a hospital. These monitoring systems produce large volumes of data that could be used to improve patient care.
+
+![](icu_patient.png)
+
+Our goal will be to predict the outcome of critical care patients using physiological data available on the first day of admission to the intensive care unit. These predictions could be used for resource planning or to assist with family discussions.
+
+The dataset used in this lesson was extracted from the eICU Collaborative Research Database, a publicly available dataset comprising deidentified physiological data collected from critically ill patients.
+
+## Sourcing and accessing data
+
+Machine learning helps us to find patterns in data, so sourcing and understanding data is key. Unsuitable or poorly managed data will lead to a poor project outcome, regardless of the modelling approach.
+
+We will be using an open access subset of the eICU Collaborative Research Database, a publicly available dataset comprising deidentified physiological data collected from critically ill patients. 
+
+For simplicity, we will be working with a pre-prepared CSV file that comprises data extracted from a demo version of the dataset.
+
+## Structured query language
+
+Learning to extract data from sources such as databases and file systems is a key skill in machine learning. Familiarity with Structured Query Language (SQL) will equip you well for these tasks. For reference, the query used to extract the dataset is outlined below. Briefly, this query:
+
+- `SELECTs` multiple columns
+- `FROM` the `patient`, `apachepatientresult`, and `apacheapsvar` tables
+- `WHERE` certain conditions are met.
+
+```sql
+SELECT p.gender, SAFE_CAST(p.age as int64) as age, p.admissionweight,
+       a.unabridgedhosplos, a.acutephysiologyscore, a.apachescore, a.actualhospitalmortality,
+       av.heartrate, av.meanbp, av.creatinine, av.temperature, av.respiratoryrate,
+       av.wbc, p.admissionheight
+FROM `physionet-data.eicu_crd_demo.patient` p
+INNER JOIN `physionet-data.eicu_crd_demo.apachepatientresult` a
+ON p.patientunitstayid = a.patientunitstayid
+INNER JOIN `physionet-data.eicu_crd_demo.apacheapsvar` av
+ON p.patientunitstayid = av.patientunitstayid
+WHERE apacheversion LIKE 'IVa'
+```
+
+Let’s begin by loading this data:
+
+```{r}
+# load the data
+cohort <- read_csv("./eicu_cohort.csv")
+head(cohort)
+```
+
+## Knowing your data
+
+Before moving ahead on a project, it is important to understand the data. Having someone with domain knowledge - and ideally first hand knowledge of the data collection process - helps us to design a sensible task and to use data effectively.
+
+Summarizing data is an important first step. We will want to know aspects of the data such as: extent of missingness; data types; numbers of observations.
+
+One common step is to view summary characteristics (for example, see [Table 1](https://www.nature.com/articles/s41746-018-0029-1/tables/1) of the paper by Rajkomar et al.). Let's generate a similar table for ourselves:
+
+
+```{r}
+# rename columns
+names(cohort)[names(cohort) == "unabridgedhosplos"] <- "length_of_stay"
+names(cohort)[names(cohort) == "meanbp"] <- "mean_blood_pressure"
+names(cohort)[names(cohort) == "wbc"] <- "white_cell_count"
+
+#view summary characteristics
+t1 <- CreateTableOne(vars = names(cohort), data = cohort, factorVars = "actualhospitalmortality")
+
+#Output to LaTeX
+kableone(t1)
+```
+
+## Exercise
+
+A) What is the approximate percent mortality in the eICU cohort?  
+B) Which variables appear noticeably different in the "Alive" and "Expired"  groups?  
+C) How does the in-hospital mortality differ between the eICU cohort and the ones in [Rajkomar et al](https://www.nature.com/articles/s41746-018-0029-1/tables/1)?  
+
+## Solution
+A) Approximately 17% (40/235)   
+B) Several variables differ, including age, length of stay, acute physiology score, heart rate, etc.  
+C) The Rajkomar et al dataset has significantly lower in-hospital mortality (~2% vs 17%).
+
+## Partitioning
+
+Typically we will want to split our data into a training set and "held-out" test set. The training set is used for building our model and our test set is used for evaluation. A split of ~70% training, 30% test is common.
+
+![Train and test set](./train_test.png)
+
+To ensure reproducibility, we should set the random state of the splitting method. This means that the same "random" split  will be produced in the future.
+
+```{r}
+library(caret)
+
+# Partition data into training and test sets
+set.seed(42)
+
+# Define features and outcome
+features <- "apachescore"
+outcome <- "actualhospitalmortality"
+
+train_index <- createDataPartition(cohort[[outcome]], p = 0.7, list = FALSE)
+
+x_train <- cohort[train_index, features]
+y_train <- cohort[train_index, outcome]
+x_test <- cohort[-train_index, features]
+y_test <- cohort[-train_index, outcome]
+
+# creating test and train dataframe
+train_df <- cohort[train_index, ]
+test_df <- cohort[-train_index, ]
+```
+
