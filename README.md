@@ -2,7 +2,9 @@
 
 ### Summer 2024
 
-Welcome to the BST 209 course repository! You can find and download all course materials here. 
+Welcome to the BST 209 course repository! 
+
+Canvas link: https://canvas.harvard.edu/courses/141013/assignments/syllabus
 
 # Instructors
 
