@@ -1,0 +1,606 @@
+---
+title: "Distance"
+output: "html_document"
+---
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+options(digits=3)
+set.seed(1)
+library(tidyverse)
+library(caret)
+library(dplyr)
+library(dslabs)
+library(rafalib)
+ds_theme_set()
+```
+In this lesson, we will explore the concept of distance in the context of machine learning, and how it applies to building models with multiple predictors.
+
+# Digit reader 
+
+Let's start with an example. When letters are received in the post office, they are sorted by zip code. Originally, humans sorted these by hand. Today, thanks to machine learning algorithms, a computer can read zip codes, and a robot sorts the letters. We will learn how to build algorithms that can read a digit.
+
+```{r, echo=FALSE}
+knitr::include_graphics("https://d79i1fxsrar4t.cloudfront.net/assets/img/docs/zip-code-digits.47d1a727.png")
+```
+
+The first step in building an algorithm is to understand the outcomes and features. Below are three images of written digits that have been assigned outcomes $y$ by a human. These form our training set.
+
+```{r, echo=FALSE, cache=TRUE, message=FALSE}
+url <- "https://raw.githubusercontent.com/datasciencelabs/data/master/hand-written-digits-train.csv"
+digits <- read_csv(url)
+tmp <- lapply( c(1,4,5), function(i){
+    expand.grid(Row=1:28, Column=1:28) %>%  
+      mutate(id=i, label=digits$label[i],  
+             value = unlist(digits[i,-1])) 
+})
+tmp <- Reduce(rbind, tmp)
+tmp %>% ggplot(aes(Row, Column, fill=value)) + 
+    geom_raster() + 
+    scale_y_reverse() +
+    scale_fill_gradient(low="white", high="black") +
+    facet_grid(.~label)
+```
+
+The images are converted into $28 \times 28 = 784$ pixels and for each pixel we obtain a grey scale intensity between 0 (white) and 255 (black) which we consider continuous for now.xw
+
+```{r, echo=FALSE}
+tmp %>% ggplot(aes(Row, Column, fill=value)) + 
+    geom_point(pch=21) + 
+    scale_y_reverse() +
+    scale_fill_gradient(low="white", high="black") +
+    facet_grid(.~label)
+```
+
+# Defining Features and Outcomes
+
+For each digit $i$ we have a categorical outcome $Y_i$ which can be one of 10 values: $0,1,2,3,4,5,6,7,8,9$ and features $X_{i,1}, \dots, X_{i,784}$. 
+
+We use bold face $\mathbf{X}_i = (X_{i,1}, \dots, X_{i,784})$ to distinguish the vector from the individual predictors. When referring to an arbitrary set of features we drop the index $i$ and use $Y$ and $\mathbf{X} = (X_{1}, \dots, X_{784})$. 
+
+We use upper case variables because, in general, we think of the predictors as random variables. We use lower case, for example $\mathbf{X} = \mathbf{x}$, to denote observed values. 
+
+The machine learning task is to build an algorithm that returns a prediction for any possible values of the features. We will start with a simpler example and build up our knowledge until we can handle the more complex example.
+
+# Simplified Example with Two Classes
+
+Let's consider a task where we have 784 predictors. For illustrative purposes, we will build an example with 2 features and only two classes, 2s and 7s.
+
+```{r, echo=FALSE}
+if(!exists("digits")){
+  url <- "https://raw.githubusercontent.com/datasciencelabs/data/master/hand-written-digits-train.csv"
+digits <- read_csv(url)
+}
+```
+
+Filter the dataset to include only 2s and 7s and change the labels from numbers to factors.
+
+```{r}
+# Filter the dataset to include only rows where the label is either 2 or 7
+# Convert the label column to character type to prevent R from treating it as numeric
+digits_27 <- digits %>% filter(label %in% c(2,7)) %>%
+  mutate(label =  as.character(label))
+```
+
+# Defining Features
+
+It's reasonable to believe we could distinguish 2s from 7s by comparing the number of non-white pixels in the upper-left and lower-bottom quadrants.
+
+We define two features $X_1$ and $X_2$ as the percent of non-white pixels in the upper-left and lower-right quadrants respectively.
+
+```{r}
+# Define the grid of row and column indices for a 28x28 image
+row_column <- expand.grid(row=1:28, col=1:28)
+
+# Identify the indices of pixels in the upper-left quadrant
+ind1 <- which(row_column$col <= 14 & row_column$row <=14)
+
+# Identify the indices of pixels in the lower-right quadrant
+ind2 <- which(row_column$col > 14 & row_column$row > 14) 
+
+# Combine the indices from both quadrants
+ind <- c(ind1,ind2)
+
+# Convert the digit images to a matrix (excluding the first column which is the label)
+X <- as.matrix(digits_27[,-1])
+
+# Convert pixel values to binary (0 if <= 200, 1 if > 200)
+X <- X > 200
+
+# Calculate the proportion of non-white pixels in the upper-left and lower-right quadrants
+X1 <- rowSums(X[,ind1])/rowSums(X)
+X2 <- rowSums(X[,ind2])/rowSums(X)
+
+# Add the calculated features (X1 and X2) and a binary label to the digits_27 data frame
+digits_27 <- digits_27 %>% 
+  mutate(y = ifelse(label == "7", 1, 0),
+         X_1 = X1, X_2 = X2)
+```
+
+# Probability Estimation
+
+Here is the conditional probability of being a 7 as a function of $(X_1, X_2)$.
+
+```{r, echo=FALSE, cache=TRUE}
+y <- as.factor(digits_27$label)
+x <- cbind(X1, X2)
+library(RColorBrewer)
+library(caret)
+fit <- knn3(x, y, 401)
+GS <- 150
+X1s <- seq(min(X1),max(X1),len=GS)
+X2s <- seq(min(X2),max(X2),len=GS)
+p_x <- expand.grid(X_1=X1s, X_2=X2s)
+yhat <- predict(fit, newdata = p_x, type="prob")[,2]
+p_x <- mutate(p_x, yhat=yhat)
+fit_loess<- loess(yhat ~ X_1*X_2, data=p_x, 
+           degree=1, span=1/5)$fitted
+
+p_x <- p_x %>% mutate(p = fit_loess) 
+p_x_plot <- p_x %>%
+  ggplot(aes(X_1, X_2, fill=fit_loess))  +
+  scale_fill_gradientn(colors=c("#F8766D","white","#00BFC4"))+
+  geom_raster() 
+p_x_plot
+```
+
+# Training and Testing Sets
+
+Next we will take a smaller random sample to mimic our training data as well as our test data.
+
+```{r}
+set.seed(1971)
+dat <- sample_n(digits_27, 1000)
+```
+
+Create a train and test set using the caret package:
+
+```{r}
+index_train<- createDataPartition(y = dat$label, times =1, p=0.5, list = FALSE)
+train_set <- slice(dat, index_train)
+test_set <- slice(dat, -index_train)
+```
+
+# Visualizing Training Data
+
+We can visualize the training data now using color to denote the classes:
+
+```{r}
+train_set %>% 
+  ggplot(aes(X_1, X_2, fill = label)) +
+  geom_point(pch=21) 
+```
+
+# Logistic Regression
+
+Let's try logistic regression. The model is:
+
+$$ g(\mbox{Pr}(Y=1 \mid X_1=x_1 , X_2 = x_2) = 
+\beta_0 + \beta_1 x_1 + \beta_2 x_2$$
+
+and we fit it like this:
+
+```{r}
+fit <-  glm(y ~ X_1 + X_2, data=train_set, family="binomial")
+```
+
+Make predictions:
+
+```{r}
+p_hat <- predict(fit, newdata = test_set)
+y_hat <- ifelse(p_hat > 0.5, 1, 0)
+confusionMatrix(data = as.factor(y_hat), reference = as.factor(test_set$y))
+```
+
+Since we are using 0.5 as our cutoff, and the $\log\{0.5 / (1-0.5) \} = 0$ we know that the decisiotn rule is to call a 7 if
+$\hat{\beta}_0 + \hat{\beta}_1 x_1 + \hat{\beta}_2 x_2 > 0$ and 2 otherwise. This implies that the function 
+
+$$
+\hat{\beta}_0 + \hat{\beta}_1 x_1 + \hat{\beta}_2 x_2 = 0 \implies x_2 = - \hat{\beta}_0/\hat{\beta}_2 - \hat{\beta}_1 x_1/ \hat{\beta}_2
+$$
+
+splits the $x_1, x_2$ plane in areas in which we call twos and areas in which we call sevens. 
+
+```{r}
+train_set %>% ggplot(aes(X_1, X_2, fill = label)) +
+  geom_point(pch=21) +
+  geom_abline(intercept = -fit$coef[1]/fit$coef[3],
+              slope = -fit$coef[2]/fit$coef[3])
+```
+
+The estimate $\hat{p}(x_1, x_2)$ does not approximate the $p(x_1, x_2)$ very well:
+
+```{r}
+p_x %>% mutate(p = predict(fit, newdata = .)) %>%
+  ggplot(aes(X_1, X_2, fill=p))  +
+  scale_fill_gradientn(colors=c("#F8766D","white","#00BFC4"))+ geom_raster() 
+```
+
+Given the shape of $p(x_1, x_2)$ it is impossible for a logistic regression model to provide an accurate estimate because with logistic regression the estimate can only be a plane and the true conditional probability is not:
+
+```{r}
+p_x_plot
+```
+
+We will learn other machine learning algorithms that provide more flexibility. 
+
+## Distance
+
+The concept of distance is quite intuitive. For example, when we cluster animals into subgroups, we are implicitly defining a distance that permits us to say what animals are "close" to each other.
+
+![](https://raw.githubusercontent.com/genomicsclass/labs/master/highdim/images/handmade/animals.png)
+
+Many of the analyses we perform with high-dimensional data relate directly or indirectly to distance. Many clustering and machine learning techniques rely on being able to define distance, using features or predictors. 
+
+## Euclidean Distance
+
+In machine learning and data analysis, various distance metrics are used depending on the nature of the data and the problem at hand. Euclidean distance is the most common, and most likely the most familiar to you too.
+
+As a review, let's define the distance between two points, $A$ and $B$, on a Cartesian plane.
+
+```{r,echo=FALSE,fig.cap=""}
+# Set up plotting parameters
+mypar()
+
+# Create the plot
+plot(c(0,1,1),c(0,0,1), pch=16, cex=2, xaxt="n", yaxt="n", xlab="", ylab="", bty="n", xlim=c(-0.25,1.25), ylim=c(-0.25,1.25))
+lines(c(0,1,1,0), c(0,0,1,0))
+
+# Add text annotations
+text(0,.2,expression(paste('(A'[x]*',A'[y]*')')),cex=1.5)
+text(1,1.2,expression(paste('(B'[x]*',B'[y]*')')),cex=1.5)
+text(-0.1,0,"A",cex=2)
+text(1.1,1,"B",cex=2)
+```
+
+The euclidean distance between $A$ and $B$ is:
+
+$$\sqrt{ (A_x-B_x)^2 + (A_y-B_y)^2}$$
+
+## Manhattan ("Taxicab") distance
+
+Note that Euclidean distance isn't the only measure of distance, and often our choice of distance metric is an important consideration in the modelling process.
+
+Another common measure of distance is the Manhattan distance , which measures the sum of the absolute differences between the coordinates of two points. 
+
+Conceptually, you can think of Manhattan distance as the route your taxi would take through grid-based systems like city blocks.
+
+We will learn more about the use cases for Euclidean and Manhattan distances later, when we explore regularization.
+
+The Manhattan distance is the concept behind L1 norm (also known as the Manhattan norm or Taxicab norm) and L2 norm, also known as the Euclidean norm.
+
+## Distance in High Dimensions
+
+Earlier we introduced a training dataset with feature matrix measurements for 784 features for 500 digits. 
+
+```{r, echo=FALSE, cache=TRUE, message=FALSE}
+url <- "https://raw.githubusercontent.com/datasciencelabs/data/master/hand-written-digits-train.csv"
+digits <- read_csv(url)
+```
+
+
+```{r}
+digits_27 <- digits %>% filter(label %in% c(2,7)) %>%
+  mutate(label =  as.character(label))
+```
+
+```{r}
+row_column <- expand.grid(row=1:28, col=1:28)
+ind1 <- which(row_column$col <= 14 & row_column$row <=14)
+ind2 <- which(row_column$col > 14 & row_column$row > 14) 
+ind <- c(ind1,ind2)
+X <- as.matrix(digits_27[,-1])
+X <- X > 200
+X1 <- rowSums(X[,ind1])/rowSums(X)
+X2 <- rowSums(X[,ind2])/rowSums(X)
+digits_27 <- digits_27 %>% 
+  mutate(y = ifelse(label == "7", 1, 0),
+         X_1 = X1, X_2 = X2)
+```
+
+```{r}
+set.seed(1971)
+dat <- sample_n(digits_27, 1000)
+```
+
+We start by creating a train and test set using the `caret` package:
+
+```{r}
+index_train<- createDataPartition(y = dat$label, times=1, p=0.5, list=FALSE)
+
+# Convert the matrix to a vector
+index_train_vec <- as.vector(index_train)
+
+# Use the vector with slice
+train_set <- slice(dat, index_train)
+test_set <- slice(dat, -index_train)
+
+# Check the first few rows of the training set
+head(train_set)
+```
+
+
+```{r}
+sample_n(train_set,10) %>% select(label, pixel351:pixel360) 
+```
+
+We are interested in describing the distance between observations, in this case digits. Later, for the purposes of selecting features, we might also be interested in finding pixels that _behave similarly_ across samples.
+
+To define distance, we need to know what the points are since mathematical distance is computed between points. With high dimensional data, points are no longer on the Cartesian plane. Instead they are in higher dimensions. For example, observation $i$ is defined by a point in 784 dimensional space: $(Y_{i,1},\dots,Y_{i,784})^\top$. Feature $j$ is defined by a point in 500 dimensions $(Y_{1,j},\dots,Y_{500,j})^\top$
+
+Once we define points, the Euclidean distance is defined in a very similar way as it is defined for two dimensions. For instance, the distance between two observations, say observations $i=1$ and $i=2$ is:
+
+$$
+\mbox{dist}(1,2) = \sqrt{ \sum_{j=1}^{784} (Y_{1,j}-Y_{2,j })^2 }
+$$
+
+and the distance between two features, say, $15$ and $273$ is:
+
+$$
+\mbox{dist}(15,273) = \sqrt{ \sum_{i=1}^{500} (Y_{i,15}-Y_{i,273})^2 }
+$$
+
+
+#### Example
+
+The first thing we will do is create a _matrix_ with the predictors
+
+```{r}
+X <- select(train_set , pixel0:pixel783) %>% as.matrix()
+```
+
+Rows and columns of matrices can be accessed like this:
+
+```{r}
+third_row <- X[3,]
+tenth_column <- X[,10]
+```
+
+So the first two observations are 7s and the 253rd is a 2. Let's see if their distances match this:
+```{r}
+X_1 <- X[1,]
+X_2 <- X[2,]
+X_253 <- X[253,]
+sqrt(sum((X_1-X_2)^2))
+sqrt(sum((X_1-X_253)^2))
+```
+
+As expected, the 7s are closer to each other. If you know matrix algebra, note that a faster way to compute this is using matrix algebra:
+
+```{r}
+sqrt( crossprod(X_1-X_2) )
+sqrt( crossprod(X_1-X_253) )
+```
+
+Now to compute all the distances at once, we have the function `dist`.
+
+```{r}
+d <- dist(X)
+class(d)
+```
+
+
+Note that this produces an object of class `dist` and, to access the entries using row and column indices, we need to coerce it into a matrix:
+
+```{r}
+as.matrix(d)[1,2]
+as.matrix(d)[1,253]
+```
+
+
+Note that for illustrative purposes we defined two predictors. Defining distances between observations based on these two covariates is much more intuitive since we can simply visualize the distance in a  two dimensional plot
+
+```{r}
+ggplot(train_set) + 
+  geom_point(aes(X_1, X_2, fill=label), pch=21)
+```
+
+## k Nearest Neighbors
+
+K-nearest neighbors (kNN) is easier to adapt to multiple dimensions. We first define the distance between all observations based on the features. Basically, for any point $\bf{x}$ for which we want an estimate of $p(\bf{x})$, we look for the $k$ nearest points and then take an average of these points. This gives us an estimate of $p(x_1,x_2)$. We can now control flexibility through $k$. 
+
+Let's use our logistic regression as a baseline:
+
+```{r}
+library(caret)
+glm_fit <- glm(y~.,data = select(train_set, y, X_1, X_2) )
+f_hat <- predict(glm_fit, newdata = test_set, 
+                 type = "response")
+tab <- table(pred=round(f_hat), truth=test_set$y)
+confusionMatrix(tab)$tab
+confusionMatrix(tab)$overall["Accuracy"]
+```
+
+Now, lets compare to kNN. Let's start with the default $k = 5$
+
+```{r}
+knn_fit <- knn3(y~.,data = select(train_set, y, X_1, X_2) )
+f_hat <- predict(knn_fit, newdata = test_set)[,2]
+tab <- table(pred=round(f_hat), truth=test_set$y)
+confusionMatrix(tab)$tab
+confusionMatrix(tab)$overall["Accuracy"]
+```
+
+This already improves accuracy over the logistic model. Let's see why this is:
+
+```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center", message = FALSE }
+# Define the range for X_1 and X_2 from 0 to 0.5
+x_range <- seq(0, 0.5, length.out = 100)
+y_range <- seq(0, 0.5, length.out = 100)
+
+# Create the grid of values
+p_x <- expand.grid(X_1 = x_range, X_2 = y_range)
+
+f_hat <- predict(knn_fit, newdata = p_x)[,2]
+g1 <- p_x %>% mutate(f_hat = f_hat) %>%
+  ggplot(aes(X_1, X_2, fill=f_hat))  +
+  scale_fill_gradientn(colors=c("#F8766D","white","#00BFC4")) + geom_raster()  + guides(fill=FALSE) +  
+  stat_contour(aes(x=X_1,y=X_2,z=f_hat),data=p_x, breaks=c(0.5),color="black",lwd=1.5)
+
+g2 <- ggplot(p_x) +  
+  geom_point(data=train_set, aes(x=X_1, y=X_2, fill=label), pch=21) + stat_contour(aes(X_1,X_2,z=f_hat), breaks=c(0.5),color="black",lwd=1.5) 
+  
+library(gridExtra)
+grid.arrange(g1,g2, nrow=1)
+``` 
+
+When $k=5$, we see some islands of red in the blue area. This is due to what we call _over training_. Note that we have higher accuracy in the train set compared to the test set:
+
+```{r}
+f_hat <- predict(knn_fit, newdata = test_set)[,2]
+tab <- table(pred=round(f_hat), truth=test_set$y)
+confusionMatrix(tab)$overall["Accuracy"]
+f_hat_train <- predict(knn_fit, newdata = train_set)[,2]
+tab <- table(pred=round(f_hat_train), truth=train_set$y)
+confusionMatrix(tab)$overall["Accuracy"]
+```
+
+## Overfitting
+
+Overfitting is at its worse when we set $k = 1$. In this case we will obtain perfect accuracy in the training set because each point is used to predict itself. So perfect accuracy must happen by definition. However, the test set accuracy is actually worse than logistic regression.
+
+```{r}
+knn_fit_1 <- knn3(y~.,data = select(train_set, y, X_1, X_2), k=1)
+
+f_hat <- predict(knn_fit_1, newdata = train_set)[,2]
+tab <- table(pred=round(f_hat), truth=train_set$y)
+confusionMatrix(tab)$overall["Accuracy"]
+
+f_hat <- predict(knn_fit_1, newdata = test_set)[,2]
+tab <- table(pred=round(f_hat), truth=test_set$y)
+confusionMatrix(tab)$overall["Accuracy"]
+```
+
+We can see the overfitting problem in this figure:
+
+```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center" }
+f_hat <- predict(knn_fit_1, newdata = p_x)[,2]
+g1 <- p_x %>% mutate(f_hat = f_hat) %>%
+  ggplot(aes(X_1, X_2, fill=f_hat))  +
+  scale_fill_gradientn(colors=c("#F8766D","white","#00BFC4")) + geom_raster()  + guides(fill=FALSE) +  
+  stat_contour(aes(x=X_1,y=X_2,z=f_hat),data=p_x, breaks=c(0.5),color="black",lwd=1.5)
+
+g2 <- ggplot(p_x) +  
+  geom_point(data=train_set, aes(x=X_1, y=X_2, fill=label),  pch=21) + stat_contour(aes(X_1,X_2,z=f_hat), breaks=c(0.5),color="black",lwd=1.5) 
+  
+library(gridExtra)
+grid.arrange(g1,g2, nrow=1)
+``` 
+
+We can also underfit our model. Look at what happens with 251 closest neighbors:
+
+```{r}
+knn_fit_251 <- knn3(y~.,data = select(train_set, y, X_1, X_2), k=251)
+f_hat <- predict(knn_fit_251, newdata = test_set)[,2]
+tab <- table(pred=round(f_hat), truth=test_set$y)
+confusionMatrix(tab)$overall["Accuracy"]
+```
+
+This turns out to be similar to logistic regression:
+```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center" }
+f_hat <- predict(knn_fit_251, newdata = p_x)[,2]
+g1 <- p_x %>% mutate(f_hat = f_hat) %>%
+  ggplot(aes(X_1, X_2, fill=f_hat))  +
+  scale_fill_gradientn(colors=c("#F8766D","white","#00BFC4")) + geom_raster()  + guides(fill=FALSE) +  
+  stat_contour(aes(x=X_1,y=X_2,z=f_hat),data=p_x, breaks=c(0.5),color="black",lwd=1.5)
+
+g2 <- ggplot(p_x) +  
+  geom_point(data=train_set, aes(x=X_1, y=X_2, fill=label),  pch=21) + stat_contour(aes(X_1,X_2,z=f_hat), breaks=c(0.5),color="black",lwd=1.5) 
+  
+library(gridExtra)
+grid.arrange(g1,g2, nrow=1)
+``` 
+
+Let's plot the accuracy for different numbers of closest neighbors.
+```{r}
+control <- trainControl(method='cv', number=2, p=.5)
+dat2 <- mutate(dat, label=as.factor(label)) %>%
+  select(label,X_1,X_2)
+res <- train(label ~ .,
+             data = dat2,
+             method = "knn",
+             trControl = control,
+             tuneLength = 1, # How fine a mesh to go on grid
+             tuneGrid=data.frame(k=seq(3,151,2)),
+             metric="Accuracy")
+plot(res)
+```
+
+With $k = 11$ we obtain what appears to be a decent estimate of the true $f$.
+
+```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center" }
+knn_fit <- knn3(y ~ .,data = select(train_set, y, X_1, X_2),
+                k=11)
+f_hat <- predict(knn_fit, newdata = p_x)[,2]
+
+g1 <- p_x %>% mutate(f_hat = f_hat) %>%
+  ggplot(aes(X_1, X_2, fill=f_hat))  +
+  scale_fill_gradientn(colors=c("#F8766D","white","#00BFC4")) + geom_raster()  + guides(fill=FALSE) +  
+  stat_contour(aes(x=X_1,y=X_2,z=f_hat),data=p_x, breaks=c(0.5),color="black",lwd=1.5)
+
+g2 <- ggplot(p_x) +  
+  geom_point(data=train_set, aes(x=X_1, y=X_2, fill=label),  pch=21) + stat_contour(aes(X_1,X_2,z=f_hat), breaks=c(0.5),color="black",lwd=1.5) 
+ 
+library(gridExtra)
+grid.arrange(g1,g2, nrow=1)  
+``` 
+
+An important part of data science is visualizing results to determine why we are succeeding and why we are failing.
+
+```{r, echo=FALSE}
+f_hat <- predict(knn_fit, newdata = test_set, k=11)[,2]
+
+high_prob_and_correct_2 <- which(f_hat<0.02 &
+                               test_set$label=="2")[1:5]
+high_prob_and_incorrect_2 <- which(f_hat<0.2 &
+                                   test_set$label=="7")[1:5]
+low_prob <-  which(abs(f_hat-0.5)<0.05)[1:5] 
+high_prob_and_incorrect_7 <- which(f_hat>0.75 &
+                                   test_set$label=="2")[1:5]
+high_prob_and_correct_7 <- which(f_hat>0.98 &
+                                   test_set$label=="7")[1:5]
+
+plot_it <- function(index){
+  tmp <- lapply( index, function(i){
+    expand.grid(Row=1:28, Column=1:28) %>%
+      mutate(id=as.character(i),
+             label=test_set$label[i],  
+             value = unlist(test_set[i,2:785])) 
+    })
+  tmp <- Reduce(rbind,tmp)
+  tmp  %>% ggplot(aes(Row, Column, fill=value)) + 
+      geom_raster() + 
+      scale_y_reverse() +
+      scale_fill_gradient(low="white", high="black") +
+      geom_vline(xintercept = 14.5) +
+    geom_hline(yintercept = 14.5) +  
+    facet_grid(.~id)
+}
+```
+
+Here are some 2s that were correctly called with high probability:
+```{r, echo=FALSE, fig.aling="center", fig.width=10}
+plot_it(high_prob_and_correct_2)
+```
+
+Here are some 7s that were incorrectly called 2s with high probability:
+```{r, echo=FALSE, fig.aling="center", fig.width=10}
+plot_it(high_prob_and_incorrect_2)
+```
+
+Here are some for which the predictor was about 50-50:
+```{r, echo=FALSE, fig.aling="center", fig.width=10}
+plot_it(low_prob)
+```
+
+Here are some 7s that were correctly called with high probability:
+
+```{r, echo=FALSE, fig.aling="center", fig.width=10}
+plot_it(high_prob_and_correct_7)
+```
+
+Here are some 2s that were incorrectly called with high probability:
+
+```{r, echo=FALSE, fig.aling="center", fig.width=10}
+plot_it(high_prob_and_incorrect_7)
+```
+
