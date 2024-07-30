@@ -73,6 +73,12 @@ A) What is the most time consuming aspect of developing a predictive model, acco
 
 B) How have “traditional modeling approaches" dealt with high numbers of predictor variables, according to the authors?
 
+### Answers
+
+A) 80% of effort in building models is in “preprocessing, merging, customizing, and cleaning”.
+
+B) Traditional modeling approaches have dealt with complexity by choosing a very limited number of variables to consider.
+
 ## Statistics and “AI”
 
 There are ongoing and often polarized debates about the relationship between statistics, machine learning, and “A.I”. Keeping out of the fight, a slightly hand-wavy, non-controversial take might be:
