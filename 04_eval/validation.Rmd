@@ -1,0 +1,15 @@
+---
+title: "Validation"
+output: "html_document"
+---
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+set.seed(1)
+library(tidyverse)
+library(caret)
+library(dplyr)
+library(dslabs)
+library(rafalib)
+ds_theme_set()
+```
+
