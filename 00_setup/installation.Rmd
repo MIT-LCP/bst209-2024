@@ -16,8 +16,8 @@ install.packages("devtools") # Package management tools
 install.packages("tidyverse") # Tidy data
 install.packages("dplyr") # Data manipulation
 install.packages("ggplot2") # Data visualization
-install.package("dslabs") # Datasets
-install.package("rafalib") # Data exploration
+install.packages("dslabs") # Datasets
+install.packages("rafalib") # Data exploration
 install.packages("rmarkdown") # Rmarkdown
 install.packages("knitr") # Report generation
 install.packages("tableone") # Summary statistics
