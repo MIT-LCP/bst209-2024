@@ -15,214 +15,6 @@ ds_theme_set()
 ```
 In this lesson, we will explore the concept of distance in the context of machine learning, and how it applies to building models with multiple predictors.
 
-# Digit reader 
-
-Let's start with an example. When letters are received in the post office, they are sorted by zip code. Originally, humans sorted these by hand. Today, thanks to machine learning algorithms, a computer can read zip codes, and a robot sorts the letters. We will learn how to build algorithms that can read a digit.
-
-```{r, echo=FALSE}
-knitr::include_graphics("https://d79i1fxsrar4t.cloudfront.net/assets/img/docs/zip-code-digits.47d1a727.png")
-```
-
-The first step in building an algorithm is to understand the outcomes and features. Below are three images of written digits that have been assigned outcomes $y$ by a human. These form our training set.
-
-```{r, echo=FALSE, cache=TRUE, message=FALSE}
-url <- "https://raw.githubusercontent.com/datasciencelabs/data/master/hand-written-digits-train.csv"
-digits <- read_csv(url)
-tmp <- lapply( c(1,4,5), function(i){
-    expand.grid(Row=1:28, Column=1:28) %>%  
-      mutate(id=i, label=digits$label[i],  
-             value = unlist(digits[i,-1])) 
-})
-tmp <- Reduce(rbind, tmp)
-tmp %>% ggplot(aes(Row, Column, fill=value)) + 
-    geom_raster() + 
-    scale_y_reverse() +
-    scale_fill_gradient(low="white", high="black") +
-    facet_grid(.~label)
-```
-
-The images are converted into $28 \times 28 = 784$ pixels and for each pixel we obtain a grey scale intensity between 0 (white) and 255 (black) which we consider continuous for now.xw
-
-```{r, echo=FALSE}
-tmp %>% ggplot(aes(Row, Column, fill=value)) + 
-    geom_point(pch=21) + 
-    scale_y_reverse() +
-    scale_fill_gradient(low="white", high="black") +
-    facet_grid(.~label)
-```
-
-# Defining Features and Outcomes
-
-For each digit $i$ we have a categorical outcome $Y_i$ which can be one of 10 values: $0,1,2,3,4,5,6,7,8,9$ and features $X_{i,1}, \dots, X_{i,784}$. 
-
-We use bold face $\mathbf{X}_i = (X_{i,1}, \dots, X_{i,784})$ to distinguish the vector from the individual predictors. When referring to an arbitrary set of features we drop the index $i$ and use $Y$ and $\mathbf{X} = (X_{1}, \dots, X_{784})$. 
-
-We use upper case variables because, in general, we think of the predictors as random variables. We use lower case, for example $\mathbf{X} = \mathbf{x}$, to denote observed values. 
-
-The machine learning task is to build an algorithm that returns a prediction for any possible values of the features. We will start with a simpler example and build up our knowledge until we can handle the more complex example.
-
-# Simplified Example with Two Classes
-
-Let's consider a task where we have 784 predictors. For illustrative purposes, we will build an example with 2 features and only two classes, 2s and 7s.
-
-```{r, echo=FALSE}
-if(!exists("digits")){
-  url <- "https://raw.githubusercontent.com/datasciencelabs/data/master/hand-written-digits-train.csv"
-digits <- read_csv(url)
-}
-```
-
-Filter the dataset to include only 2s and 7s and change the labels from numbers to factors.
-
-```{r}
-# Filter the dataset to include only rows where the label is either 2 or 7
-# Convert the label column to character type to prevent R from treating it as numeric
-digits_27 <- digits %>% filter(label %in% c(2,7)) %>%
-  mutate(label =  as.character(label))
-```
-
-# Defining Features
-
-It's reasonable to believe we could distinguish 2s from 7s by comparing the number of non-white pixels in the upper-left and lower-bottom quadrants.
-
-We define two features $X_1$ and $X_2$ as the percent of non-white pixels in the upper-left and lower-right quadrants respectively.
-
-```{r}
-# Define the grid of row and column indices for a 28x28 image
-row_column <- expand.grid(row=1:28, col=1:28)
-
-# Identify the indices of pixels in the upper-left quadrant
-ind1 <- which(row_column$col <= 14 & row_column$row <=14)
-
-# Identify the indices of pixels in the lower-right quadrant
-ind2 <- which(row_column$col > 14 & row_column$row > 14) 
-
-# Combine the indices from both quadrants
-ind <- c(ind1,ind2)
-
-# Convert the digit images to a matrix (excluding the first column which is the label)
-X <- as.matrix(digits_27[,-1])
-
-# Convert pixel values to binary (0 if <= 200, 1 if > 200)
-X <- X > 200
-
-# Calculate the proportion of non-white pixels in the upper-left and lower-right quadrants
-X1 <- rowSums(X[,ind1])/rowSums(X)
-X2 <- rowSums(X[,ind2])/rowSums(X)
-
-# Add the calculated features (X1 and X2) and a binary label to the digits_27 data frame
-digits_27 <- digits_27 %>% 
-  mutate(y = ifelse(label == "7", 1, 0),
-         X_1 = X1, X_2 = X2)
-```
-
-# Probability Estimation
-
-Here is the conditional probability of being a 7 as a function of $(X_1, X_2)$.
-
-```{r, echo=FALSE, cache=TRUE}
-y <- as.factor(digits_27$label)
-x <- cbind(X1, X2)
-library(RColorBrewer)
-library(caret)
-fit <- knn3(x, y, 401)
-GS <- 150
-X1s <- seq(min(X1),max(X1),len=GS)
-X2s <- seq(min(X2),max(X2),len=GS)
-p_x <- expand.grid(X_1=X1s, X_2=X2s)
-yhat <- predict(fit, newdata = p_x, type="prob")[,2]
-p_x <- mutate(p_x, yhat=yhat)
-fit_loess<- loess(yhat ~ X_1*X_2, data=p_x, 
-           degree=1, span=1/5)$fitted
-
-p_x <- p_x %>% mutate(p = fit_loess) 
-p_x_plot <- p_x %>%
-  ggplot(aes(X_1, X_2, fill=fit_loess))  +
-  scale_fill_gradientn(colors=c("#F8766D","white","#00BFC4"))+
-  geom_raster() 
-p_x_plot
-```
-
-# Training and Testing Sets
-
-Next we will take a smaller random sample to mimic our training data as well as our test data.
-
-```{r}
-set.seed(1971)
-dat <- sample_n(digits_27, 1000)
-```
-
-Create a train and test set using the caret package:
-
-```{r}
-index_train<- createDataPartition(y = dat$label, times =1, p=0.5, list = FALSE)
-train_set <- slice(dat, index_train)
-test_set <- slice(dat, -index_train)
-```
-
-# Visualizing Training Data
-
-We can visualize the training data now using color to denote the classes:
-
-```{r}
-train_set %>% 
-  ggplot(aes(X_1, X_2, fill = label)) +
-  geom_point(pch=21) 
-```
-
-# Logistic Regression
-
-Let's try logistic regression. The model is:
-
-$$ g(\mbox{Pr}(Y=1 \mid X_1=x_1 , X_2 = x_2) = 
-\beta_0 + \beta_1 x_1 + \beta_2 x_2$$
-
-and we fit it like this:
-
-```{r}
-fit <-  glm(y ~ X_1 + X_2, data=train_set, family="binomial")
-```
-
-Make predictions:
-
-```{r}
-p_hat <- predict(fit, newdata = test_set)
-y_hat <- ifelse(p_hat > 0.5, 1, 0)
-confusionMatrix(data = as.factor(y_hat), reference = as.factor(test_set$y))
-```
-
-Since we are using 0.5 as our cutoff, and the $\log\{0.5 / (1-0.5) \} = 0$ we know that the decisiotn rule is to call a 7 if
-$\hat{\beta}_0 + \hat{\beta}_1 x_1 + \hat{\beta}_2 x_2 > 0$ and 2 otherwise. This implies that the function 
-
-$$
-\hat{\beta}_0 + \hat{\beta}_1 x_1 + \hat{\beta}_2 x_2 = 0 \implies x_2 = - \hat{\beta}_0/\hat{\beta}_2 - \hat{\beta}_1 x_1/ \hat{\beta}_2
-$$
-
-splits the $x_1, x_2$ plane in areas in which we call twos and areas in which we call sevens. 
-
-```{r}
-train_set %>% ggplot(aes(X_1, X_2, fill = label)) +
-  geom_point(pch=21) +
-  geom_abline(intercept = -fit$coef[1]/fit$coef[3],
-              slope = -fit$coef[2]/fit$coef[3])
-```
-
-The estimate $\hat{p}(x_1, x_2)$ does not approximate the $p(x_1, x_2)$ very well:
-
-```{r}
-p_x %>% mutate(p = predict(fit, newdata = .)) %>%
-  ggplot(aes(X_1, X_2, fill=p))  +
-  scale_fill_gradientn(colors=c("#F8766D","white","#00BFC4"))+ geom_raster() 
-```
-
-Given the shape of $p(x_1, x_2)$ it is impossible for a logistic regression model to provide an accurate estimate because with logistic regression the estimate can only be a plane and the true conditional probability is not:
-
-```{r}
-p_x_plot
-```
-
-We will learn other machine learning algorithms that provide more flexibility. 
-
 ## Distance
 
 The concept of distance is quite intuitive. For example, when we cluster animals into subgroups, we are implicitly defining a distance that permits us to say what animals are "close" to each other.
@@ -256,6 +48,55 @@ The euclidean distance between $A$ and $B$ is:
 
 $$\sqrt{ (A_x-B_x)^2 + (A_y-B_y)^2}$$
 
+## K-means clustering
+
+An example of a machine learning that makes use of distance very directly is K-Means clustering. The K-means algorithm can be used to partition a dataset into distinct groups, or clusters. 
+
+The algorithm aims to minimize the distance between points within each cluster and their respective centroids, effectively grouping similar points together.
+
+### How K-means works
+
+1. Initialization: Choose the number of clusters ($K$) and randomly select ($K$) data points as initial centroids.
+2. Assignment: Assign each data point to the nearest centroid based on Euclidean distance.
+3. Update: Calculate new centroids as the mean of all points assigned to each cluster.
+Iteration: Repeat the assignment and update steps until the centroids no longer change significantly or a maximum number of iterations is reached.
+
+### Example: Clustering Heart Rates of Adults and Pediatric Patients
+
+We will create a bimodal distribution representing heart rates of adults and pediatric patients and apply K-Means clustering to identify the two distinct groups.
+
+```{r}
+# Set seed for reproducibility
+set.seed(123)
+
+# Generate heart rate data for adults
+adult_heart_rates <- rnorm(200, mean = 70, sd = 10)
+
+# Generate heart rate data for pediatric patients
+pediatric_heart_rates <- rnorm(200, mean = 110, sd = 15)
+
+# Combine the two datasets to create a bimodal distribution
+heart_rate_data <- tibble(heart_rate = c(adult_heart_rates, pediatric_heart_rates))
+
+# Visualize the data
+ggplot(heart_rate_data, aes(x = heart_rate)) +
+  geom_histogram(binwidth = 5, fill = "blue", color = "black") +
+  labs(title = "Heart Rate Data (Bimodal Distribution)", x = "Heart Rate", y = "Frequency")
+
+# Apply K-means clustering with 2 clusters
+kmeans_result <- kmeans(heart_rate_data, centers = 2, nstart = 20)
+
+# Add the cluster assignments to the original data
+heart_rate_data <- heart_rate_data %>% mutate(cluster = factor(kmeans_result$cluster))
+
+# Visualize the clustered data
+ggplot(heart_rate_data, aes(x = heart_rate, fill = cluster)) +
+  geom_histogram(binwidth = 5, color = "black", position = "dodge") +
+  labs(title = "K-Means Clustering of Heart Rates", x = "Heart Rate", y = "Frequency", fill = "Cluster")
+```
+
+While we explicitly stated a value for $K$ in this example, there are several methods that are used to automatically determine the number of clusters. We won't explore those methods here, but you can find plenty of resources on the web if you would like to do a deeper dive.
+
 ## Manhattan ("Taxicab") distance
 
 Note that Euclidean distance isn't the only measure of distance, and often our choice of distance metric is an important consideration in the modelling process.
@@ -263,6 +104,8 @@ Note that Euclidean distance isn't the only measure of distance, and often our c
 Another common measure of distance is the Manhattan distance , which measures the sum of the absolute differences between the coordinates of two points. 
 
 Conceptually, you can think of Manhattan distance as the route your taxi would take through grid-based systems like city blocks.
+
+![](./images/manhattan_distance.png)
 
 We will learn more about the use cases for Euclidean and Manhattan distances later, when we explore regularization.
 

@@ -36,7 +36,7 @@ These quantities are not independent; decreasing one will often increase the oth
 
 * `Variance`: The amount by which $\hat f$ would change if we estimated it using a different training dataset. High variance indicates that small changes in the training data can lead to large changes in $\hat f$. In general, more flexible statistical methods have higher variance.
 
-![](./bias-var-graphs.png)
+![](./images/bias-var-graphs.png)
 
 As a general rule, more flexible methods increase variance but decrease bias. Initially, increasing flexibility reduces bias faster than it increases variance, leading to lower expected test set error. However, beyond a certain point, further increasing flexibility increases variance significantly.
 
