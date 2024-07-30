@@ -5,7 +5,6 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-options(digits=3)
 set.seed(1)
 library(caret)
 library(dplyr)
