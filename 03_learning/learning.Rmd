@@ -20,7 +20,7 @@ How do humans learn? Typically we are given examples and we learn rules through 
 
 Our model has a number of tweakable parameters. We need to find the optimal values for those parameters such that our model outputs the "best" predictions for a set of input variables.
 
-![Model training](./ml_model.png).
+![Model training](./images/ml_model.png).
 
 ## Loss functions
 
