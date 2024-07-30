@@ -1,11 +1,10 @@
 ---
-title: 'Key concepts'
+title: 'Introduction'
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-options(digits=3)
 set.seed(1)
 library(caret)
 library(dslabs)
@@ -83,7 +82,7 @@ There are ongoing and often polarized debates about the relationship between sta
 - *Deep learning*: A subfield of machine learning that focuses on more complex “artificial neural network” algorithms.
 - *Artificial intelligence*: The goal of conferring human-like intelligence to machines. “A.I.” has become popularly used as a synonym for machine learning, so researchers working on the goal of intelligent machines have taken to using “Artificial General Intelligence” (A.G.I.) for clarity.
 
-![Figure 1: Statistics, machine learning, and “AI” (sandserifcomics)](ai.jpg)
+![Figure 1: Statistics, machine learning, and “AI” (sandserifcomics)](./images/ai.jpg)
 
 ## Supervised vs unsupervised learning
 

@@ -19,7 +19,7 @@ ds_theme_set()
 
 Critical care units are home to sophisticated monitoring systems, helping carers to support the lives of the sickest patients within a hospital. These monitoring systems produce large volumes of data that could be used to improve patient care.
 
-![](icu_patient.png)
+![](./images/icu_patient.png)
 
 Our goal will be to predict the outcome of critical care patients using physiological data available on the first day of admission to the intensive care unit. These predictions could be used for resource planning or to assist with family discussions.
 
@@ -99,7 +99,7 @@ C) The Rajkomar et al dataset has significantly lower in-hospital mortality (~2%
 
 Typically we will want to split our data into a training set and "held-out" test set. The training set is used for building our model and our test set is used for evaluation. A split of ~70% training, 30% test is common.
 
-![Train and test set](./train_test.png)
+![Train and test set](./images/train_test.png)
 
 To ensure reproducibility, we should set the random state of the splitting method. This means that the same "random" split  will be produced in the future.
 
