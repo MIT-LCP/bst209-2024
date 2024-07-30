@@ -101,7 +101,7 @@ names(cohort)[names(cohort) == "meanbp"] <- "mean_blood_pressure"
 names(cohort)[names(cohort) == "wbc"] <- "white_cell_count"
 
 #view summary characteristics
-t1 <- CreateTableOne(vars = names(cohort), data = cohort, factorVars = "actualhospitalmortality", strata = "actualhospitalmortality")
+t1 <- CreateTableOne(vars = names(cohort), data = cohort, factorVars = "actualhospitalmortality")
 
 #Output to LaTeX
 kableone(t1)
@@ -111,15 +111,16 @@ kableone(t1)
 
 A) What is the approximate percent mortality in the eICU cohort?  
 
-B) Which variables appear noticeably different in the "Alive" (0) and "Deceased" (1) groups? Hint: Check the tableone documentation with `help()`
+B) Which variables appear noticeably different in the "Alive" (0) and "Deceased" (1) groups? Hint: Check the tableone documentation with `help()` to stratify the data.
 
 C) How does the in-hospital mortality differ between the eICU cohort and the ones in [Rajkomar et al](https://www.nature.com/articles/s41746-018-0029-1/tables/1)?  
 
 ## Solution
 
-A) Approximately 9% (48/488) 
+A) Approximately 9% (48/536) 
 
-B) Several variables differ, including age, length of stay, acute physiology score, heart rate, etc.  
+B) After stratifying by `actualhospitalmortality`, you'll see that several variables differ, including age, length of stay, acute physiology score, heart rate, etc. 
+
 C) The Rajkomar dataset has significantly lower in-hospital mortality (~2% vs 9%).
 
 ## Partitioning
