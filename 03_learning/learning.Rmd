@@ -108,13 +108,31 @@ ggplot(data = data.frame(x, y), aes(x = x, y = y)) +
   )
 ```
 
-As we can see, our loss rapidly increases as predictions ($\hat{y}$) move away from the true values ($y$). The result is that outliers have a strong influence on our model fit. 
+As we can see, our loss rapidly increases as predictions ($\hat{y}$) move away from the true values ($y$), because the errors are squared. The result is that outliers have a strong influence on our model fit.
 
 ## Optimisation
 
 In machine learning, there is typically a training step where an algorithm is used to find the optimal set of model parameters (i.e. those parameters that give the minimum possible error). This is the essence of machine learning!
 
-There are many approaches to optimisation. [Gradient descent](https://en.wikipedia.org/wiki/Gradient_descent) is a popular approach. In gradient descent we take steps in the opposite direction of the gradient of a function, seeking the lowest point (i.e. the lowest error). A learning rate allows us to define how large steps to take.
+There are many approaches to optimisation. [Gradient descent](https://en.wikipedia.org/wiki/Gradient_descent) is a popular approach. 
+
+In gradient descent we take steps in the opposite direction of the gradient of a function, seeking the lowest point (i.e. the lowest error). A learning rate allows us to define how large steps to take.
+
+## Exercise
+
+A) Explain in your own words what a loss function is and why it is important in machine learning.
+
+B) Give an example of a situation where you might use Mean Squared Error (MSE) as a loss function.
+
+C) Mean Absolute Error (MAE) is another common loss function used in machine learning. It measures the average absolute difference between predicted values and actual values. Why might MAE be a better choice than Mean Squared Error (MSE) in some cases?
+
+## Solution
+
+A) A loss function quantifies how well or poorly a model's predictions match the actual data. It is important because it provides a way to measure the performance of the model and guides the optimization process to improve the model's performance.
+
+B) Mean Squared Error (MSE) is often used in regression tasks where the goal is to predict continuous values, such as predicting house prices based on various features (e.g., square footage, number of bedrooms, location).
+
+C) Mean Absolute Error (MAE) might be a better choice than MSE when outliers are present in the data. MAE measures the average absolute difference between predicted values and actual values and is less sensitive to outliers than MSE because it does not square the error terms.
 
 ### Example of Gradient Descent
 
@@ -154,23 +172,19 @@ optimal_x
 
 ## Exercise
 
-A) What does a loss function quantify?
+A) What is the purpose of optimization in the context of machine learning?
 
-B) What is an example of a loss function? 
+B) What is gradient descent and why is it commonly used in machine learning?
 
-C) What are some other names used for loss functions?  
-
-D) What is happening when a model is trained?  
+C) Gradient descent is an iterative optimization algorithm used to minimize a loss function. The learning rate is a crucial hyperparameter in gradient descent that determines the size of the steps the algorithm takes towards the minimum of the loss function. Describe the impact of using a high learning rate versus a low learning rate in gradient descent. What might happen in each case, and how does it affect the convergence of the algorithm?
 
 ## Solution
 
-A loss function quantifies the goodness of fit of a model (i.e. how closely its predictions match the known targets).  
+A) The purpose of optimization in machine learning is to find the best model parameters that minimize the loss function, thereby improving the model's predictions and overall performance.
 
-B) One example of a loss function is mean squared error (M.S.E.).  
+B) Gradient descent is an optimization algorithm used to minimize the loss function by iteratively adjusting the model parameters in the direction that reduces the loss. It is commonly used because it is computationally efficient and effective for many machine learning tasks.
 
-C) Objective function, error function, and cost function.  
-
-D) When a model is trained, we are attempting to find the optimal model parameters in process known as "optimisation".
+C) A high learning rate in gradient descent may cause the algorithm to overshoot the optimal parameters, resulting in poor convergence or even divergence. A low learning rate, on the other hand, may lead to slow convergence, requiring more iterations to reach the optimal parameters.
 
 ## What's next?
 
