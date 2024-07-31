@@ -68,7 +68,7 @@ Actual values: [3.0, -0.5, 2.0, 1.5]
 
 ## Solution
 
-A) Calculate the differences, square them, and then take the mean
+A) Calculate the differences, square each difference, and then take the mean
 
 We could implement this in our code as follows:
 
@@ -121,14 +121,6 @@ ggplot(data = data.frame(x, y), aes(x = x, y = y)) +
 
 As we can see, our loss rapidly increases as predictions ($\hat{y}$) move away from the true values ($y$), because the errors are squared. The result is that outliers have a strong influence on our model fit.
 
-## Optimisation
-
-In machine learning, there is typically a training step where an algorithm is used to find the optimal set of model parameters (i.e. those parameters that give the minimum possible error). This is the essence of machine learning!
-
-There are many approaches to optimisation. [Gradient descent](https://en.wikipedia.org/wiki/Gradient_descent) is a popular approach. 
-
-In gradient descent we take steps in the opposite direction of the gradient of a function, seeking the lowest point (i.e. the lowest error). A learning rate allows us to define how large steps to take.
-
 ## Exercise
 
 A) Explain in your own words what a loss function is and why it is important in machine learning.
@@ -145,9 +137,28 @@ B) Mean Squared Error (MSE) is often used in regression tasks where the goal is 
 
 C) Mean Absolute Error (MAE) might be a better choice than MSE when outliers are present in the data. MAE measures the average absolute difference between predicted values and actual values and is less sensitive to outliers than MSE because it does not square the error terms.
 
+## Optimisation
+
+In machine learning, there is typically a training step where an algorithm is used to find the optimal set of model parameters (i.e. those parameters that give the minimum possible error). This is the essence of machine learning!
+
+There are many approaches to optimisation. [Gradient descent](https://en.wikipedia.org/wiki/Gradient_descent) is a popular approach. 
+
+Gradient descent is a powerful optimization technique used in machine learning to find the parameters that minimize a loss function. 
+
+In gradient descent we take steps in the opposite direction of the gradient of a function, seeking the lowest point (i.e. the lowest error). A learning rate allows us to define how large steps to take.
+
 ### Example of Gradient Descent
 
-Here’s a simple example of gradient descent to minimize a quadratic function, where: 
+In the following example, the quadratic function is used as a simple example to demonstrate the concept of gradient descent. The quadratic function is defined as:
+
+$$f(x)=x2+3x+2$$
+The gradient (or derivative) of this function is:
+
+$$f′(x)=2x+3$$
+
+The goal is to find the value of $x$ that minimizes the function $f(x). 
+
+In the following example we use gradient descent to minimize a quadratic function, where: 
 
 - `f` is the function we want to minimize.
 - `f_prime` is the gradient of the function.
@@ -180,6 +191,8 @@ n_iterations <- 100
 optimal_x <- gradient_descent(f_prime, initial_x, learning_rate, n_iterations)
 optimal_x
 ```
+
+Note that the quadratic function is convex, meaning it has a single global minimum. This makes it straightforward to demonstrate convergence.
 
 ## Exercise
 
