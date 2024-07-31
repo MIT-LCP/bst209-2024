@@ -30,9 +30,6 @@ Loss functions are crucial for doing this. They allow us to quantify how closely
 Mean squared error is a common example of a loss function, often used for linear regression. For each prediction, we measure the distance between the known target value ($y$) and our prediction ($y_{hat}$), and then we take the square.
 
 ```{r}
-# Load necessary library
-library(tidyverse)
-
 # Create sample labeled data
 data <- data.frame(x = c(1, 2, 3, 4, 5), y = c(-0.5, 1, 2, 4, 7))
 
