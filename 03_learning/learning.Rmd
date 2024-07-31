@@ -6,7 +6,6 @@ output:
 ---
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-options(digits=3)
 set.seed(1)
 library(tidyverse)
 library(dslabs)
@@ -155,16 +154,22 @@ optimal_x
 
 ## Exercise
 
-A) What does a loss function quantify?  
-B) What is an example of a loss function?   
+A) What does a loss function quantify?
+
+B) What is an example of a loss function? 
+
 C) What are some other names used for loss functions?  
+
 D) What is happening when a model is trained?  
 
 ## Solution
 
 A loss function quantifies the goodness of fit of a model (i.e. how closely its predictions match the known targets).  
+
 B) One example of a loss function is mean squared error (M.S.E.).  
+
 C) Objective function, error function, and cost function.  
+
 D) When a model is trained, we are attempting to find the optimal model parameters in process known as "optimisation".
 
 ## What's next?
