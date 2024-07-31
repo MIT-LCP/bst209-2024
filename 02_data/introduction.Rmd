@@ -17,7 +17,7 @@ ds_theme_set()
 
 Over the next three weeks, we will explore key concepts in machine learning. Our goal will be to become familiar with the kind of language used in machine learning research, and to build and evaluate machine learning models.
 
-We'll be referring to a highly-cited machine learning paper on “Scalable and accurate deep learning with electronic health records” throughout this workshop. You can find the paper here: https://www.nature.com/articles/s41746-018-0029-1
+We will be referring to a highly-cited machine learning paper on “Scalable and accurate deep learning with electronic health records” throughout this workshop. You can find the paper here: https://www.nature.com/articles/s41746-018-0029-1
 
 ## Rule-based programming
 
