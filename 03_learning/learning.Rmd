@@ -8,9 +8,7 @@ output:
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 set.seed(1)
 library(tidyverse)
-library(dslabs)
 library(caret)
-ds_theme_set()
 ```
 
 ## How do machines learn?
@@ -187,6 +185,27 @@ n_iterations <- 100
 # Run Gradient Descent
 optimal_x <- gradient_descent(f_prime, initial_x, learning_rate, n_iterations)
 optimal_x
+```
+
+Let's plot our quadratic function to see if the answer looks correct:
+
+```{r}
+# Create a sequence of x values
+x_values <- seq(-10, 10, by = 0.1)
+
+# Calculate the corresponding y values
+y_values <- f(x_values)
+
+# Create a data frame for plotting
+plot_data <- data.frame(x = x_values, y = y_values)
+
+# Plot the function using ggplot2
+ggplot(plot_data, aes(x = x, y = y)) +
+  geom_line(color = "blue") +
+  labs(title = expression(f(x) == x^2 + 3*x + 2),
+       x = "x",
+       y = "f(x)") +
+  theme_minimal()
 ```
 
 Note that the quadratic function is convex, meaning it has a single global minimum. This makes it straightforward to demonstrate convergence.
