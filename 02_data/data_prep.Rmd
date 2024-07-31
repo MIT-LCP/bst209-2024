@@ -1,5 +1,5 @@
 ---
-title: 'Data preparation X'
+title: 'Data preparation'
 output: html_document
 ---
 
