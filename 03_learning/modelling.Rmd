@@ -25,42 +25,42 @@ $$
 \hat{y} = wX + b
 $$
 
-# Example: Predicting Sex Based on Height
+# Example: Predicting Hospital Mortality Based on Apache Score
 
-Let’s consider a binary classification problem where we predict whether a person is male or female based on their height. First, let’s load the dataset and split it into training and testing sets.
+Let’s consider a binary classification problem where we predict whether a patient will experience in-hospital mortality (actualhospitalmortality) based on their Apache Score (apachescore). First, let’s load the dataset and split it into training and testing sets.
 
 ```{r}
 # Load the data
-data(heights)
-y <- heights$sex
-x <- heights$height
+cohort <- read_csv("./eicu_cohort.csv")
+y <- cohort$actualhospitalmortality
+x <- cohort$apachescore
 
 # Split the data into training and testing sets
-train_index <- createDataPartition(y, times = 1, p = 0.5, list = FALSE)
-train_set <- heights[train_index, ]
-test_set <- heights[-train_index, ]
+train_index <- createDataPartition(y, times = 1, p = 0.7, list = FALSE)
+train_set <- cohort[train_index, ]
+test_set <- cohort[-train_index, ]
 ```
 
-Our predictions can be denoted by $\hat{y}$ (pronounced "y hat") and our explanatory variables (or "features") denoted by $X$. In our case, we will use a single feature: height.
+Our predictions can be denoted by $\hat{y}$ (pronounced "y hat") and our explanatory variables (or "features") denoted by $X$. In our case, we will use a single feature: Apache Score.
 
 There are two parameters of the model that we would like to learn from the training data: $w$, weight and $b$, bias. Could we use a linear regression for our classification task? Let's try fitting a line to our outcome data.
 
 ```{r}
 # Fit the linear regression model
-model <- lm(as.numeric(sex == "Female") ~ height, data = train_set)
+model <- lm(as.numeric(actualhospitalmortality) ~ apachescore, data = train_set)
 
 # Generate data for plotting the regression line
-X_fit <- seq(min(train_set$height), max(train_set$height))
-y_fit <- predict(model, newdata = data.frame(height = X_fit))
+X_fit <- seq(min(train_set$apachescore), max(train_set$apachescore)+30, length.out = 100)
+y_fit <- predict(model, newdata = data.frame(apachescore = X_fit))
 
 # Create a data frame for the fitted line
-plot_data <- data.frame(height = X_fit, y = y_fit)
+plot_data <- data.frame(apachescore = X_fit, y = y_fit)
 
 # Plot the data points and the fitted regression line
-ggplot(train_set, aes(x = height, y = as.numeric(sex == "Female"))) +
-  geom_point(color = 'black', shape = 4) +  # Plot data points
-  geom_line(data = plot_data, aes(x = height, y = y), color = 'red', linewidth = 1) +  # Plot regression line
-  labs(x = "Height", y = "Sex (Female=1, Male=0)", title = "Height vs. Sex with Linear Regression") +
+ggplot(train_set, aes(x = apachescore, y = actualhospitalmortality)) +
+  geom_point(color = 'black', shape = 4) + 
+  geom_line(data = plot_data, aes(x = apachescore, y = y), color = 'red', linewidth = 1) +
+  labs(x = "Apache Score", y = "Mortality (Expired=1, Alive=0)", title = "Apache Score vs. Mortality with Linear Regression") + 
   theme_minimal()
 ```
 
@@ -105,7 +105,7 @@ $$
 f(x) = \frac{1}{1+e^{-({wX + b})}}
 $$
 
-As an added benefit, we can interpret the output value as a probability. The probability relates to the positive class (the outcome with value "1"), which in our case is in-hospital mortality ("EXPIRED").
+As an added benefit, we can interpret the output value as a probability. The probability relates to the positive class (the outcome with value "1"), which in our case is in-hospital mortality.
 
 ## Logistic regression
 
@@ -119,21 +119,21 @@ As is typically the case when using machine learning packages, we don't need to 
 
 ```{r}
 # Fit the logistic regression model
-log_model <- train(as.factor(sex == "Female") ~ height, data = train_set, method = "glm", family = "binomial")
+log_model <- glm(actualhospitalmortality ~ apachescore, data = train_set, family = binomial)
 
 # Generate data for plotting the regression line
-X_fit <- seq(min(train_set$height), max(train_set$height), length.out = 100)
-y_fit <- predict(log_model, newdata = data.frame(height = X_fit), type = "prob")
-y_fit = y_fit[,2]
+X_fit <- seq(min(train_set$apachescore), max(train_set$apachescore)+30, length.out = 100)
+y_fit <- predict(log_model, newdata = data.frame(apachescore = X_fit), type = "response")
+
 
 # Create a data frame for the fitted line
-plot_data <- data.frame(height = X_fit, y = y_fit)
+plot_data <- data.frame(apachescore = X_fit, y = y_fit)
 
 # Plot the data points and the fitted regression line
-ggplot(train_set, aes(x = height, y = as.numeric(sex == "Female"))) +
-  geom_point(color = 'black', shape = 4) +  # Plot data points
-  geom_line(data = plot_data, aes(x = height, y = y), color = 'red', linewidth = 1) +  # Plot regression line
-  labs(x = "Height", y = "Sex (Female=1, Male=0)", title = "Height vs. Sex with Logistic Regression") +
+ggplot(train_set, aes(x = apachescore, y = actualhospitalmortality)) +
+  geom_point(color = 'black', shape = 4) +
+  geom_line(data = plot_data, aes(x = apachescore, y = y), color = 'red', linewidth = 1) +
+  labs(x = "Apache Score", y = "Mortality (Expired=1, Alive=0)", title = "Apache Score vs. Mortality with Logistic Regression") +
   theme_minimal()
 ```
 
@@ -143,15 +143,12 @@ Now that our model is able to output the probability of our outcome, we can set 
 
 ```{r}
 # Create new data for prediction
-x_new <- data.frame(height = 70)
+x_new <- data.frame(apachescore = 120)
+threshold = 0.5
 
 # Predict outcome
-outcome <- predict(log_model, newdata = x_new)
-
-# Predict class probabilities
-probs <- predict(log_model, newdata = x_new, type = "prob")
+probability <- predict(log_model, newdata = x_new, type = "response")
 
 # Print the outcome and probabilities
-cat(sprintf('For height=%.1f, we predict an outcome of "%s".\n', x_new$height, outcome))
-cat(sprintf('Class probabilities (Male, Female): (%.2f, %.2f).', probs[1,1], probs[1,2]))
+sprintf('For apachescore=%.1f, we predict an outcome of "%s".', x_new$apachescore, ifelse(probability > threshold, "EXPIRED", "ALIVE"))
 ```
