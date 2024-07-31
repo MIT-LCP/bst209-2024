@@ -40,7 +40,6 @@ train_index <- createDataPartition(y, times = 1, p = 0.7, list = FALSE)
 train_set <- cohort[train_index, ]
 test_set <- cohort[-train_index, ]
 ```
-
 Our predictions can be denoted by $\hat{y}$ (pronounced "y hat") and our explanatory variables (or "features") denoted by $X$. In our case, we will use a single feature: Apache Score.
 
 There are two parameters of the model that we would like to learn from the training data: $w$, weight and $b$, bias. Could we use a linear regression for our classification task? Let's try fitting a line to our outcome data.
@@ -107,6 +106,22 @@ $$
 
 As an added benefit, we can interpret the output value as a probability. The probability relates to the positive class (the outcome with value "1"), which in our case is in-hospital mortality.
 
+## Exercise
+
+A) Define regression and classification in your own words.
+
+B) Give an example of a regression problem and a classification problem that are relevant to your area of specialism.
+
+C) Explain why the sigmoid function is used in logistic regression.
+
+## Solution
+
+A) Regression is predicting a continuous outcome, while classification is predicting categorical outcomes.
+
+B) Your examples!
+
+C) The sigmoid function maps any real-valued number into a value between 0 and 1, making it suitable for modeling probabilities in logistic regression.
+
 ## Logistic regression
 
 Logistic regressions are powerful models that often outperform more sophisticated machine learning models.  In machine learning studies it is typical to include performance of a logistic regression model as a baseline (as they do, for example, in [Rajkomar and colleagues](https://www.nature.com/articles/s41746-018-0029-1#Sec20)).
@@ -152,3 +167,15 @@ probability <- predict(log_model, newdata = x_new, type = "response")
 # Print the outcome and probabilities
 sprintf('For apachescore=%.1f, we predict an outcome of "%s".', x_new$apachescore, ifelse(probability > threshold, "EXPIRED", "ALIVE"))
 ```
+
+## Exercise
+
+A) What is a decision boundary in the context of logistic regression?
+
+B) How would changing the threshold (e.g., from 0.5 to 0.7) affect the predictions? Explain with an example.
+
+## Solution
+
+A) A decision boundary is the threshold at which the predicted probability is used to classify an outcome.
+
+B) Changing the threshold affects the classification outcomes. For instance, increasing the threshold from 0.5 to 0.7 would result in fewer positive class predictions, making the model more conservative. 

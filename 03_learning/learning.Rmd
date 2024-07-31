@@ -59,6 +59,17 @@ $$
 
 $mse$ is the Mean Squared Error. $y_{i}$ is the actual value and $\hat{y}_{i}$ is the predicted value. $\sum_{}$ is notation to indicate that we are taking the sum of the difference. $n$ is the total number of observations, so $\frac{1}{n}$ indicates that we are taking the mean.
 
+## Exercise
+
+A) Calculate the Mean Squared Error (MSE) for the following set of predictions and actual values:
+
+Predictions: [2.5, 0.0, 2.1, 1.6]
+Actual values: [3.0, -0.5, 2.0, 1.5]
+
+## Solution
+
+A) Calculate the differences, square them, and then take the mean
+
 We could implement this in our code as follows:
 
 ```{r}
