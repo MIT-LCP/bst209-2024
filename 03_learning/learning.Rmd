@@ -140,7 +140,7 @@ In machine learning, there is typically a training step where an algorithm is us
 
 There are many approaches to optimisation. [Gradient descent](https://en.wikipedia.org/wiki/Gradient_descent) is a popular approach. 
 
-Gradient descent is a powerful optimization technique used in machine learning to find the parameters that minimize a loss function. 
+Gradient descent is a powerful optimization technique used in machine learning to find the parameters that minimize a loss function.
 
 In gradient descent we take steps in the opposite direction of the gradient of a function, seeking the lowest point (i.e. the lowest error). A learning rate allows us to define how large steps to take.
 
@@ -155,7 +155,7 @@ $$f′(x)=2x+3$$
 
 The goal is to find the value of $x$ that minimizes the function $f(x). 
 
-In the following example we use gradient descent to minimize a quadratic function, where: 
+In the following example we use gradient descent to minimize a quadratic function, where:
 
 - `f` is the function we want to minimize.
 - `f_prime` is the gradient of the function.
