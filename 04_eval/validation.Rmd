@@ -8,10 +8,8 @@ set.seed(1)
 library(tidyverse)
 library(caret)
 library(dplyr)
-library(dslabs)
 library(rafalib)
 library(tidymodels)
-ds_theme_set()
 ```
 
 ## Accuracy
