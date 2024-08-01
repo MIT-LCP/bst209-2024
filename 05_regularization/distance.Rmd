@@ -156,7 +156,7 @@ confusionMatrix(tab)$tab
 confusionMatrix(tab)$overall["Accuracy"]
 ```
 
-```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center", message = FALSE }
+```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center", message = FALSE, warning=FALSE}
 # Define the range for apache score and heartrate
 x_range <- seq(0, 225, length.out = 200)
 y_range <- seq(0, 200, length.out = 200)
@@ -214,7 +214,7 @@ confusionMatrix(tab)$overall["Accuracy"]
 
 We can see the overfitting problem in this figure:
 
-```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center" }
+```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center", warning=FALSE}
 f_hat <- predict(knn_fit_1, newdata = p_x)[,2]
 g1 <- p_x %>% mutate(f_hat = f_hat) %>%
   ggplot(aes(apachescore, heartrate, fill = f_hat))  +
@@ -236,13 +236,13 @@ We can also underfit our model. Look at what happens with 50 closest neighbors:
 ```{r}
 knn_fit_17 <- knn3(actualhospitalmortality ~ apachescore + heartrate, data = train_set, k=17)
 
-f_hat <- predict(knn_fit_25, newdata = test_set)[,2]
+f_hat <- predict(knn_fit_17, newdata = test_set)[,2]
 tab <- table(pred = round(f_hat), truth = as.factor(test_set$actualhospitalmortality))
 confusionMatrix(tab)$overall["Accuracy"]
 ```
 
 This turns out to be similar to logistic regression:
-```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center" }
+```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center", warning=FALSE}
 f_hat <- predict(knn_fit_17, newdata = p_x)[,2]
 g1 <- p_x %>% mutate(f_hat = f_hat) %>%
   ggplot(aes(apachescore, heartrate, fill = f_hat))  +
@@ -276,24 +276,32 @@ plot(res)
 
 With $k = 7$ we obtain what appears to be a decent estimate of the true $f$.
 
-```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center" }
-knn_fit <- knn3(y ~ .,data = select(train_set, y, X_1, X_2),
-                k=11)
-f_hat <- predict(knn_fit, newdata = p_x)[,2]
+```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center", warning=FALSE}
+knn_fit_7 <- knn3(actualhospitalmortality ~ apachescore + heartrate, data = train_set, k=7)
+f_hat <- predict(knn_fit_7, newdata = p_x)[,2]
 
 g1 <- p_x %>% mutate(f_hat = f_hat) %>%
-  ggplot(aes(X_1, X_2, fill=f_hat))  +
-  scale_fill_gradientn(colors=c("#F8766D","white","#00BFC4")) + geom_raster()  + guides(fill=FALSE) +  
-  stat_contour(aes(x=X_1,y=X_2,z=f_hat),data=p_x, breaks=c(0.5),color="black",lwd=1.5)
+  ggplot(aes(apachescore, heartrate, fill = f_hat))  +
+  scale_fill_gradientn(colors=c("#F8766D","white","#00BFC4")) + 
+  geom_raster() +
+  guides(fill=FALSE) +  
+  stat_contour(aes(x=apachescore,y=heartrate,z=f_hat),data=p_x, breaks=c(0.5),color="black",lwd=1.5)
 
 g2 <- ggplot(p_x) +  
-  geom_point(data=train_set, aes(x=X_1, y=X_2, fill=label),  pch=21) + stat_contour(aes(X_1,X_2,z=f_hat), breaks=c(0.5),color="black",lwd=1.5) 
+  geom_point(data=train_set, aes(apachescore, heartrate, fill = as.factor(actualhospitalmortality)),pch=21) +
+  stat_contour(aes(x=apachescore,y=heartrate,z=f_hat), breaks=c(0.5),color="black",lwd=1.5) +
+  guides(fill=guide_legend(title="Mortality"))
  
 library(gridExtra)
 grid.arrange(g1,g2, nrow=1)  
 ``` 
 
 
+```{r}
+f_hat <- predict(knn_fit_7, newdata = test_set)[,2]
+tab <- table(pred = round(f_hat), truth = test_set$actualhospitalmortality)
+confusionMatrix(tab)$overall["Accuracy"]
+```
 
 
 
