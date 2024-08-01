@@ -124,6 +124,8 @@ model <- logistic_reg() %>%
   set_engine("glm")
 
 # Combine the recipe and model into a workflow
+# Workflow is an object that contains the model specification
+# and pre-processing steps.
 workflow <- workflow() %>%
   add_recipe(recipe) %>%
   add_model(model)
@@ -142,16 +144,16 @@ We can now evaluate our model using the workflow:
 
 ```{r}
 # Evaluate the model using cross-validation
+# fit_resamples() evaluates the model using cross-validation
 results <- workflow %>%
   fit_resamples(cv, metrics = metric_set(accuracy))
 
 # Extract the metrics from the results
+# collect_metrics() extracts the performance metrics from the results
+# filter() keeps just the accuracy
 metrics <- results %>%
   collect_metrics() %>%
   filter(.metric == "accuracy")
-
-# Calculate the number of folds and repeats
-n <- n_folds * n_repeats
 
 # Check the content of the metrics
 str(metrics)
@@ -161,6 +163,9 @@ mean_accuracy <- mean(metrics$mean)
 std_error <- metrics$std_err
 
 # Calculate standard deviation from standard error
+# std deviation = std error * sqrt(sample size)
+# where sample size is the number of observations (in this case, number of repetitions)
+n <- n_folds * n_repeats
 std_deviation <- std_error * sqrt(n)
 
 # Report performance
