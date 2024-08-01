@@ -3,12 +3,11 @@ title: "Evaluation"
 output: "html_document"
 ---
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warnings=FALSE}
 set.seed(1)
 library(tidyverse)
 library(caret)
 library(dplyr)
-library(rafalib)
 library(pROC)
 ```
 
@@ -16,36 +15,50 @@ library(pROC)
 
 We trained a machine learning model to predict the outcome of patients admitted to intensive care units. As there are two outcomes, we refer to this as a "binary" classification task. We are now ready to evaluate the model on our held-out test set. 
 
-```{r}
-set.seed(50)
+Let's load the data and select our feature/s.
 
+```{r load_data}
 # Load the data
 cohort <- read.csv("./eicu_cohort.csv")
 features = c("apachescore")
+```
 
+Next, create our training and test sets:
+
+```{r split_data}
 # Split the data into training and testing sets
 train_index <- createDataPartition(cohort$apachescore, times = 1, p = 0.7, list = FALSE)
 train_set <- cohort[train_index, ]
 test_set <- cohort[-train_index, ]
+```
 
+Train (/fit) our model on the training set:
+
+```{r fit_model}
 # Fit the logistic regression model
 log_model <- glm(actualhospitalmortality ~ apachescore, data = train_set, family = binomial)
+```
 
+Now predict outcomes of patients in the test set:
+
+```{r predict}
 # Generate predictions (and print the first 10 predictions)
 y_hat_test_prob <- predict(log_model, test_set[features], type="response")
+
+# Round the probabilities to give 0 and 1 predictions (on 50% threshold)
 y_hat_test_class = round(y_hat_test_prob,0)
 y_hat_test_prob[1:10]
 ```
 
 Each prediction is assigned a probability of a positive class. For example, the first 10 probabilities are:
 
-```{r}
+```{r predicted_classes}
 print(y_hat_test_class[1:10])
 ```
 
 These probabilities correspond to the following predictions, either a "0" ("ALIVE") or a 1 ("DECEASED"):
 
-In comparison with the known outcomes, we can put each prediction into one of the following categories:
+By comparing the predictions with known outcomes, we can put each prediction into one of the following categories:
 
 - True positive: we predict "1" ("DECEASED") and the true outcome is "1".
 - True negative: we predict "0" ("ALIVE") and the true outcome is "0".
@@ -63,7 +76,7 @@ It is common practice to arrange these outcome categories into a "confusion matr
 
 The sum of the cells is the total number of predictions. The diagonal from top left to bottom right indicates correct predictions. Let's visualize the results of the model in the form of a confusion matrix:
 
-```{r}
+```{r generate_matrix}
 # Generate the confusion matrix
 confusion <- confusionMatrix(as.factor(y_hat_test_class),
                              as.factor(test_set$actualhospitalmortality))
@@ -88,14 +101,14 @@ $$
 
 What was the accuracy of our model? 
 
-```{r}
+```{r report_accuracy}
 accuracy <- confusion$overall['Accuracy']
 cat(sprintf("Accuracy (model) = %.2f\n", accuracy))
 ```
 
 Not bad at first glance. When comparing our performance to guessing "0" for every patient, however, it seems slightly less impressive!
 
-```{r}
+```{r predict_zeros}
 # Create a vector of zeros with the same length as the test set
 zeros <- rep(0, length(test_set$actualhospitalmortality))
 zeros_factor <- factor(zeros, levels = c(0, 1))
@@ -134,7 +147,7 @@ $$
 
 A Receiver-Operator Characteristic (ROC) curve plots 1 - specificity vs. sensitivity at varying probability thresholds. The area under this curve is known as the AUROC (or sometimes just the "Area Under the Curve", AUC) and it is a well-used measure of discrimination that was originally developed by radar operators in the 1940s.
 
-```{r}
+```{r plot_roc}
 # Create the ROC curve
 roc_curve <- roc(test_set$actualhospitalmortality, y_hat_test_prob)
 

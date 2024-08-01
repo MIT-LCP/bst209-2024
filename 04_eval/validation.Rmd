@@ -8,7 +8,6 @@ set.seed(1)
 library(tidyverse)
 library(caret)
 library(dplyr)
-library(rafalib)
 library(tidymodels)
 ```
 
@@ -24,21 +23,33 @@ $$ Accuracy = \frac{Correct\ predictions}{All\ predictions}$$
 
 What is the accuracy of our model at predicting in-hospital mortality?
 
-```{r}
+```{r load_data}
 set.seed(1)
 
 # Load the data
 cohort <- read_csv("./eicu_cohort.csv", show_col_types = FALSE)
 features = c("apachescore")
+```
 
+Split the data into training and test sets:
+
+```{r}
 # Split the data into training and testing sets
 train_index <- createDataPartition(cohort$apachescore, times = 1, p = 0.7, list = FALSE)
 train_set <- cohort[train_index, ]
 test_set <- cohort[-train_index, ]
+```
 
+Fit our model to the training set:
+
+```{r}
 # Fit the logistic regression model
 log_model <- glm(actualhospitalmortality ~ apachescore, data = train_set, family = binomial)
+```
 
+Generate the predictions:
+
+```{r}
 # generate predictions
 y_hat_train = predict(log_model, train_set[features], type="response")
 y_hat_test = predict(log_model, test_set[features], type="response")
@@ -46,7 +57,11 @@ y_hat_test = predict(log_model, test_set[features], type="response")
 # Convert probabilities to class labels (assuming binary classification with threshold 0.5)
 y_hat_train_class <- ifelse(y_hat_train > 0.5, 1, 0)
 y_hat_test_class <- ifelse(y_hat_test > 0.5, 1, 0)
+```
 
+Compute accuracy on the training and test sets:
+
+```{r}
 # Accuracy on training set
 acc_train <- mean(y_hat_train_class == train_set$actualhospitalmortality)
 cat(sprintf("Accuracy on training set: %.2f\n", acc_train))
@@ -55,6 +70,7 @@ cat(sprintf("Accuracy on training set: %.2f\n", acc_train))
 acc_test <- mean(y_hat_test_class == test_set$actualhospitalmortality)
 cat(sprintf("Accuracy on test set: %.2f\n", acc_test))
 ```
+
 Not bad! There was a slight drop in performance on our test set, but that is to be expected.
 
 ## Validation set
@@ -113,7 +129,11 @@ workflow <- workflow() %>%
 # Define the cross-validation procedure
 set.seed(1)
 cv <- vfold_cv(train_set, v = 5, repeats = 3, strata = actualhospitalmortality)
+```
 
+We can now evaluate our model using the workflow:
+
+```{r}
 # Evaluate the model using cross-validation
 results <- workflow %>%
   fit_resamples(cv, metrics = metric_set(accuracy))
