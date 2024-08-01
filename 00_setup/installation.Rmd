@@ -27,4 +27,7 @@ install.packages("tree") # Tree models
 install.packages("randomForest") # Random forests
 install.packages("caret") # Models
 install.packages("cluster") # Clustering
+install.packages("pROC") # Evaluation
+install.packages("ROCR") # Evaluation
+install.packages("tidymodels") # Workflows
 ```
