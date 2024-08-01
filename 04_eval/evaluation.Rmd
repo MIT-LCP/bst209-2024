@@ -27,6 +27,7 @@ Next, create our training and test sets:
 
 ```{r split_data}
 # Split the data into training and testing sets
+set.seed(50)
 train_index <- createDataPartition(cohort$apachescore, times = 1, p = 0.7, list = FALSE)
 train_set <- cohort[train_index, ]
 test_set <- cohort[-train_index, ]
