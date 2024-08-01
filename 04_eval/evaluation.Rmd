@@ -143,6 +143,24 @@ $$
 Specificity = \frac{TN}{FP+TN}
 $$
 
+## Precision (A.K.A "Positive Predictive Value")
+
+Precision, also known as positive predictive value, is the ratio of true positive predictions to the total number of positive predictions made by the model. It tells us how many of the patients we predicted to die actually died. The formula for precision is:
+
+$$
+Precision = \frac{TP}{TP+FP}
+$$
+
+A high precision indicates that most of the positive predictions made by the model are correct, which is important in situations where false positives carry a significant cost or consequence.
+
+## F1 Score
+
+The F1 score is a metric that combines precision and recall to give a single score. It is the harmonic mean of precision and recall and is given by the formula:
+
+$$
+F1 = 2 \times \frac{{\text{Precision} \times \text{Recall}}}{{\text{Precision} + \text{Recall}}}
+$$
+
 ## Receiver-Operator Characteristic
 
 A Receiver-Operator Characteristic (ROC) curve plots 1 - specificity vs. sensitivity at varying probability thresholds. The area under this curve is known as the AUROC (or sometimes just the "Area Under the Curve", AUC) and it is a well-used measure of discrimination that was originally developed by radar operators in the 1940s.
@@ -162,5 +180,13 @@ plot(roc_curve,
      xlab = "1 - Specificity",
      ylab = "Sensitivity")
 ```
+
+## Area Under the Precision-Recall Curve (AUPRC)
+
+The AUPRC curve is also often used to evaluate performance, often as an attempt to address issues around class imbalance. If you are interested in exploring AUPRC and AUROC in detail, we suggest reading "Closer Look at AUROC and AUPRC under Class Imbalance" by McDermott et al. (https://arxiv.org/abs/2401.06091).
+The abstract is reproduced below:
+
+> In machine learning (ML), a widespread adage is that the area under the precision-recall curve (AUPRC) is a superior metric for model comparison to the area under the receiver operating characteristic (AUROC) for binary classification tasks with class imbalance. This paper challenges this notion through novel mathematical analysis, illustrating that AUROC and AUPRC can be concisely related in probabilistic terms. *We demonstrate that AUPRC, contrary to popular belief, is not superior in cases of class imbalance and might even be a harmful metric, given its inclination to unduly favor model improvements in subpopulations with more frequent positive labels.* This bias can inadvertently heighten algorithmic disparities. Prompted by these insights, a thorough review of existing ML literature was conducted, utilizing large language models to analyze over 1.5 million papers from arXiv. Our investigation focused on the prevalence and substantiation of the purported AUPRC superiority. The results expose a significant deficit in empirical backing and a trend of misattributions that have fuelled the widespread acceptance of AUPRC's supposed advantages. Our findings represent a dual contribution: a significant technical advancement in understanding metric behaviors and a stark warning about unchecked assumptions in the ML community. 
+
 
 
