@@ -3,13 +3,14 @@ title: "Validation"
 output: "html_document"
 ---
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warnings=FALSE}
 set.seed(1)
 library(tidyverse)
 library(caret)
 library(dplyr)
 library(dslabs)
 library(rafalib)
+library(tidymodels)
 ds_theme_set()
 ```
 
@@ -29,7 +30,7 @@ What is the accuracy of our model at predicting in-hospital mortality?
 set.seed(1)
 
 # Load the data
-cohort <- read_csv("./eicu_cohort.csv")
+cohort <- read_csv("./eicu_cohort.csv", show_col_types = FALSE)
 features = c("apachescore")
 
 # Split the data into training and testing sets
@@ -56,7 +57,6 @@ cat(sprintf("Accuracy on training set: %.2f\n", acc_train))
 acc_test <- mean(y_hat_test_class == test_set$actualhospitalmortality)
 cat(sprintf("Accuracy on test set: %.2f\n", acc_test))
 ```
-
 Not bad! There was a slight drop in performance on our test set, but that is to be expected.
 
 ## Validation set
@@ -78,6 +78,7 @@ If we train our model on a single set of data, the model may learn rules that ar
 If we train on multiple, subtly-different versions of the data, we can identify rules that are likely to generalise better outside out training set, helping to avoid overfitting.
 
 Two popular of the most popular cross-validation methods:
+
 - K-fold cross validation
 - Leave-one-out cross validation
 
@@ -88,41 +89,59 @@ In K-fold cross validation, "K" indicates the number of times we split our data 
 ![5-fold validation](./images/k_fold_cross_val.png)
 
 With K-fold cross validation, we select our model to evaluate and then:
+
 1. Partition the training data into a training set and a validation set. An 80%, 20% split is common.
 2. Fit the model to the training set and make a record of the optimal parameters.
 3. Evaluate performance on the validation set.
 4. Repeat the process 5 times, then average the parameter and performance values.
 
-When creating our training and test sets, we needed to be careful to avoid data leaks. The same applies when creating training and validation sets. We can use a `pipeline` object to help manage this issue.
+When creating our training and test sets, we needed to be careful to avoid data leaks. The same applies when creating training and validation sets. We can use a `workflow` to help manage this issue.
 
 ```{r}
-from numpy import mean, std
-from sklearn.model_selection import cross_val_score, RepeatedStratifiedKFold
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.pipeline import Pipeline
+# Define the recipe for preprocessing
+recipe <- recipe(actualhospitalmortality ~ apachescore, data = train_set) %>%
+  step_mutate(actualhospitalmortality = as.factor(actualhospitalmortality)) %>% 
+  step_normalize(all_predictors())
 
-# define dataset
-X = x_train
-y = y_train
+# Define the logistic regression model
+model <- logistic_reg() %>% 
+  set_engine("glm")
 
-# define the pipeline
-steps = list()
-steps.append(('scaler', MinMaxScaler()))
-steps.append(('model', LogisticRegression()))
-pipeline = Pipeline(steps=steps)
+# Combine the recipe and model into a workflow
+workflow <- workflow() %>%
+  add_recipe(recipe) %>%
+  add_model(model)
 
-# define the evaluation procedure
-cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=3, random_state=1)
+# Define the cross-validation procedure
+set.seed(1)
+cv <- vfold_cv(train_set, v = 5, repeats = 3, strata = actualhospitalmortality)
 
-# evaluate the model using cross-validation
-scores = cross_val_score(pipeline, X, y, scoring='accuracy', cv=cv, n_jobs=-1)
+# Evaluate the model using cross-validation
+results <- workflow %>%
+  fit_resamples(cv, metrics = metric_set(accuracy))
 
-# report performance
-print('Cross-validation accuracy, mean (std): %.2f (%.2f)' % (mean(scores)*100, std(scores)*100))
-```
+# Extract the metrics from the results
+metrics <- results %>%
+  collect_metrics() %>%
+  filter(.metric == "accuracy")
 
-```
-Cross-validation accuracy, mean (std): 81.53 (3.31)
+# Calculate the number of folds and repeats
+n_folds <- 5
+n_repeats <- 3
+n <- n_folds * n_repeats
+
+# Check the content of the metrics
+str(metrics)
+
+# Summarize performance
+mean_accuracy <- mean(metrics$mean)
+std_error <- metrics$std_err
+
+# Calculate standard deviation from standard error
+std_deviation <- std_error * sqrt(n)
+
+# Report performance
+cat(sprintf('Cross-validation accuracy, mean (std): %.2f (%.2f)\n', mean_accuracy, std_deviation))
 ```
 
 Leave-one-out cross validation is the same idea, except that we have many more folds. In fact, we have one fold for each data point. Each fold we leave out one data point for validation and use all of the other points for training.
