@@ -89,6 +89,26 @@ print(confusion$table)
 
 We have two columns and rows because we have a binary outcome, but you can also extend the matrix to plot multi-class classification predictions. If we had more output classes, the number of columns and rows would match the number of classes.
 
+## Exercises
+A. How many false positives are there?
+
+B. How many false negatives are there?
+
+C. How many true positives are there?
+
+D. How many true negatives are there?
+
+## Solutions
+Be careful! The printed table is organized differently than the one we wrote showing TN, FN, TP, FP!
+
+A. 0
+
+B. 14
+
+C. 4
+
+D. 141
+
 ## Accuracy
 
 Accuracy is the overall proportion of correct predictions. Think of a dartboard. How many shots did we take? How many did we hit? Divide one by the other and that's the accuracy. 
