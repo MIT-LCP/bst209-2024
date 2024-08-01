@@ -8,9 +8,8 @@ set.seed(1)
 library(tidyverse)
 library(caret)
 library(dplyr)
-library(dslabs)
 library(rafalib)
-ds_theme_set()
+library(pROC)
 ```
 
 ## Evaluating a classification task
@@ -18,10 +17,10 @@ ds_theme_set()
 We trained a machine learning model to predict the outcome of patients admitted to intensive care units. As there are two outcomes, we refer to this as a "binary" classification task. We are now ready to evaluate the model on our held-out test set. 
 
 ```{r}
-set.seed(1)
+set.seed(50)
 
 # Load the data
-cohort <- read_csv("./eicu_cohort.csv")
+cohort <- read.csv("./eicu_cohort.csv")
 features = c("apachescore")
 
 # Split the data into training and testing sets
@@ -33,25 +32,24 @@ test_set <- cohort[-train_index, ]
 log_model <- glm(actualhospitalmortality ~ apachescore, data = train_set, family = binomial)
 
 # Generate predictions (and print the first 10 predictions)
-y_hat_test <- predict(log_model, test_set[features], type="response")
-y_hat_test[1:10]
+y_hat_test_prob <- predict(log_model, test_set[features], type="response")
+y_hat_test_class = round(y_hat_test_prob,0)
+y_hat_test_prob[1:10]
 ```
 
 Each prediction is assigned a probability of a positive class. For example, the first 10 probabilities are:
 
 ```{r}
-probs = y_hat_test[1:10]
-rounded_probs = round(probs,0)
-print(rounded_probs)
+print(y_hat_test_class[1:10])
 ```
 
-These probabilities correspond to the following predictions, either a "0" ("ALIVE") or a 1 ("EXPIRED"):
+These probabilities correspond to the following predictions, either a "0" ("ALIVE") or a 1 ("DECEASED"):
 
 In comparison with the known outcomes, we can put each prediction into one of the following categories:
 
-- True positive: we predict "1" ("EXPIRED") and the true outcome is "1".
+- True positive: we predict "1" ("DECEASED") and the true outcome is "1".
 - True negative: we predict "0" ("ALIVE") and the true outcome is "0".
-- False positive: we predict "1" ("EXPIRED") and the true outcome is "0".
+- False positive: we predict "1" ("DECEASED") and the true outcome is "0".
 - False negative: we predict "0" ("ALIVE") and the true outcome is "1".
 
 ## Confusion matrices
@@ -67,7 +65,8 @@ The sum of the cells is the total number of predictions. The diagonal from top l
 
 ```{r}
 # Generate the confusion matrix
-confusion <- confusionMatrix(as.factor(y_hat_test), as.factor(y_test))
+confusion <- confusionMatrix(as.factor(y_hat_test_class),
+                             as.factor(test_set$actualhospitalmortality))
 
 # Print the confusion matrix
 print(confusion$table)
@@ -90,24 +89,23 @@ $$
 What was the accuracy of our model? 
 
 ```{r}
-acc = metrics.accuracy_score(y_test, y_hat_test)
-print(f"Accuracy (model) = {acc:.2f}")
-```
-
-```
-Accuracy (model) = 0.82
+accuracy <- confusion$overall['Accuracy']
+cat(sprintf("Accuracy (model) = %.2f\n", accuracy))
 ```
 
 Not bad at first glance. When comparing our performance to guessing "0" for every patient, however, it seems slightly less impressive!
 
 ```{r}
-zeros = np.zeros(len(y_test))
-acc = metrics.accuracy_score(y_test, zeros)
-print(f"Accuracy (zeros) = {acc:.2f}")
-```
+# Create a vector of zeros with the same length as the test set
+zeros <- rep(0, length(test_set$actualhospitalmortality))
+zeros_factor <- factor(zeros, levels = c(0, 1))
 
-```
-Accuracy (zeros) = 0.92
+# Calculate accuracy
+confusion_zeros <- confusionMatrix(zeros_factor, as.factor(test_set$actualhospitalmortality))
+accuracy_zeros <- confusion_zeros$overall['Accuracy']
+
+# Print the accuracy
+cat(sprintf("Accuracy (zeros) = %.2f\n", accuracy_zeros))
 ```
 
 The problem with accuracy as a metric is that it is heavily influenced by prevalence of the positive outcome: because the proportion of 1s is relatively low, classifying everything as 0 is a safe bet.
@@ -137,5 +135,19 @@ $$
 A Receiver-Operator Characteristic (ROC) curve plots 1 - specificity vs. sensitivity at varying probability thresholds. The area under this curve is known as the AUROC (or sometimes just the "Area Under the Curve", AUC) and it is a well-used measure of discrimination that was originally developed by radar operators in the 1940s.
 
 ```{r}
-metrics.plot_roc_curve(reg, x_test, y_test)
+# Create the ROC curve
+roc_curve <- roc(test_set$actualhospitalmortality, y_hat_test_prob)
+
+# Plot the ROC curve
+plot(roc_curve,
+     main = "ROC Curve",
+     col = "#1c61b6",
+     print.auc = TRUE,
+     grid = TRUE,
+     xlim = c(1, 0),
+     ylim = c(0, 1),
+     xlab = "1 - Specificity",
+     ylab = "Sensitivity")
 ```
+
+
