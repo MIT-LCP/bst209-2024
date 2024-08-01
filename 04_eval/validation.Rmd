@@ -109,7 +109,9 @@ With K-fold cross validation, we select our model to evaluate and then:
 3. Evaluate performance on the validation set.
 4. Repeat the process 5 times, then average the parameter and performance values.
 
-When creating our training and test sets, we needed to be careful to avoid data leaks. The same applies when creating training and validation sets. We can use a `workflow` to help manage this issue.
+When creating our training and test sets, we needed to be careful to avoid data leaks. The same applies when creating training and validation sets. We can use `workflows` to help manage this issue (see: https://workflows.tidymodels.org/).
+
+> "A workflow is an object that can bundle together your pre-processing, modeling, and post-processing requests."
 
 ```{r}
 # Define the recipe for preprocessing
@@ -128,7 +130,12 @@ workflow <- workflow() %>%
 
 # Define the cross-validation procedure
 set.seed(1)
-cv <- vfold_cv(train_set, v = 5, repeats = 3, strata = actualhospitalmortality)
+n_folds <- 5
+n_repeats <- 3
+cv <- vfold_cv(train_set,
+               v = n_folds,
+               repeats = n_repeats,
+               strata = actualhospitalmortality)
 ```
 
 We can now evaluate our model using the workflow:
@@ -144,8 +151,6 @@ metrics <- results %>%
   filter(.metric == "accuracy")
 
 # Calculate the number of folds and repeats
-n_folds <- 5
-n_repeats <- 3
 n <- n_folds * n_repeats
 
 # Check the content of the metrics
