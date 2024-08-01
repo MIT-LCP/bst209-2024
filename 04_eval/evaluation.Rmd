@@ -102,13 +102,13 @@ D. How many true negatives are there?
 
 Be careful! The printed table is organized differently than the one we wrote showing TN, FN, TP, FP!
 
-A. 0
+A. 1
 
-B. 14
+B. 16
 
-C. 4
+C. 3
 
-D. 141
+D. 139
 
 ## Accuracy
 
