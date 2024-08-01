@@ -13,13 +13,10 @@ library(dslabs)
 library(rafalib)
 ds_theme_set()
 ```
-In this lesson, we will explore the concept of distance in the context of machine learning, and how it applies to building models with multiple predictors.
 
-## Distance
+In this lesson, we will explore the concept of distance in the context of machine learning, and how it applies to building models with multiple predictors. 
 
-The concept of distance is quite intuitive. For example, when we cluster animals into subgroups, we are implicitly defining a distance that permits us to say what animals are "close" to each other.
-
-![](https://raw.githubusercontent.com/genomicsclass/labs/master/highdim/images/handmade/animals.png)
+Distance measures play an important role in machine learning. A distance measure is an objective score that summarizes the relative difference between two objects. Most commonly, the two objects are rows of data that describe a subject (such as a person), or an event (such as a purchase, a claim, or a diagnosis).
 
 Many of the analyses we perform with high-dimensional data relate directly or indirectly to distance. Many clustering and machine learning techniques rely on being able to define distance, using features or predictors. 
 
@@ -50,7 +47,7 @@ $$\sqrt{ (A_x-B_x)^2 + (A_y-B_y)^2}$$
 
 ## K-means clustering
 
-An example of a machine learning that makes use of distance very directly is K-Means clustering. The K-means algorithm can be used to partition a dataset into distinct groups, or clusters. 
+An example of a machine learning algorithm that makes use of distance very directly is K-Means clustering. The K-means algorithm can be used to partition a dataset into distinct groups, or clusters. 
 
 The algorithm aims to minimize the distance between points within each cluster and their respective centroids, effectively grouping similar points together.
 
@@ -101,15 +98,13 @@ While we explicitly stated a value for $K$ in this example, there are several me
 
 Note that Euclidean distance isn't the only measure of distance, and often our choice of distance metric is an important consideration in the modelling process.
 
-Another common measure of distance is the Manhattan distance , which measures the sum of the absolute differences between the coordinates of two points. 
+Another common measure of distance is the Manhattan distance, which measures the sum of the absolute differences between the coordinates of two points. 
 
 Conceptually, you can think of Manhattan distance as the route your taxi would take through grid-based systems like city blocks.
 
 ![](./images/manhattan_distance.png)
 
-We will learn more about the use cases for Euclidean and Manhattan distances later, when we explore regularization.
-
-The Manhattan distance is the concept behind L1 norm (also known as the Manhattan norm or Taxicab norm) and L2 norm, also known as the Euclidean norm.
+We will learn more about the use cases for Euclidean and Manhattan distances later, when we explore regularization. The Manhattan distance is the concept behind the L1 norm (also known as the Manhattan norm or Taxicab norm) and the L2 norm is also known as the Euclidean norm.
 
 ## Distance in High Dimensions
 
