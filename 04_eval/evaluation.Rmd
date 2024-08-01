@@ -133,25 +133,31 @@ $$
 Sensitivity = Recall = \frac{TP}{TP+FN}
 $$
 
+If sensitivity is high, the model is good at identifying all the actual positives.
+
 Because a model that calls "1" for everything has perfect sensitivity, this measure is not enough on its own. Alongside sensitivity we often report on specificity.
 
 ## Specificity (A.K.A "True Negative Rate")
 
-Specificity relates to the test's ability to correctly classify patients who survive their stay (i.e. class "0"). Specificity is the proportion of those who survive who are predicted to survive. The formula for specificity is:
+Specificity measures the proportion of actual negative cases (e.g., patients who survive their stay) that the model correctly identifies. The formula for specificity is:
 
 $$
 Specificity = \frac{TN}{FP+TN}
 $$
 
+If specificity is high, the model is good at identifying all the actual negatives. In a medical test, if a test has high specificity, it means it can correctly identify most of the patients who do not have the disease.
+
 ## Precision (A.K.A "Positive Predictive Value")
 
-Precision, also known as positive predictive value, is the ratio of true positive predictions to the total number of positive predictions made by the model. It tells us how many of the patients we predicted to die actually died. The formula for precision is:
+Precision is the ratio of true positive predictions to the total number of positive predictions made by the model. In our case, it tells us how many of the patients we predicted would die actually died. The formula for precision is:
 
 $$
 Precision = \frac{TP}{TP+FP}
 $$
 
 A high precision indicates that most of the positive predictions made by the model are correct, which is important in situations where false positives carry a significant cost or consequence.
+
+(Specificity is about correctly identifying negatives, whereas precision concerns the correctness of positive predictions).
 
 ## F1 Score
 
