@@ -140,16 +140,19 @@ manhattan_distance <- function(x1, y1, x2, y2) {
 
 1. Calculate the Euclidean and Manhattan distance between point `A(2,3)` and `B(5,7)`.
 
+2. Is k-means a supervised or unsupervised approach?
 
 ## Solution
 
-1. `euclidean_distance(2, 3, 5, 7)` # Result: 5. 
+1. `euclidean_distance(2, 3, 5, 7)` 
 
-   `manhattan_distance(2, 3, 5, 7)` # Result: 7.  
+   `manhattan_distance(2, 3, 5, 7)`  
+
+2. Unsupervised (we are not providing labels to the algorithm to learn from).
 
 ## K-Nearest Neighbors
 
-K-nearest neighbors (kNN) is another clustering algorithm where,for any point for which we want to predict a class, we look for the $k$ nearest points and then take an average of these points. 
+K-nearest neighbors (kNN) is another clustering algorithm. With kNN, for any point for which we want to predict a class, we look for the $k$ nearest points and then take an average of these points. 
 
 Let's use the eICU data we've been using this week and add another predictor, `heartrate`, to our models so that now we are using `apachescore` and `heartrate` to predict mortality. 
 
