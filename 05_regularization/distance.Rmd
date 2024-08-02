@@ -3,16 +3,14 @@ title: "Distance"
 output: "html_document"
 ---
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warnings=FALSE}
 options(digits=3)
 set.seed(1)
 library(tidyverse)
 library(caret)
 library(dplyr)
-library(dslabs)
 library(rafalib)
 library(gridExtra)
-ds_theme_set()
 ```
 
 In this lesson, we will explore the concept of distance in the context of machine learning, and how it applies to building models with multiple predictors. 
@@ -82,7 +80,11 @@ heart_rate_data <- tibble(heart_rate = c(adult_heart_rates, pediatric_heart_rate
 ggplot(heart_rate_data, aes(x = heart_rate)) +
   geom_histogram(binwidth = 5, fill = "blue", color = "black") +
   labs(title = "Heart Rate Data (Bimodal Distribution)", x = "Heart Rate", y = "Frequency")
+```
 
+We can then demonstrate how K-means clustering might identify these distinct groups:
+
+```{r}
 # Apply K-means clustering with 2 clusters
 kmeans_result <- kmeans(heart_rate_data, centers = 2, nstart = 20)
 
@@ -95,7 +97,11 @@ ggplot(heart_rate_data, aes(x = heart_rate, fill = cluster)) +
   labs(title = "K-Means Clustering of Heart Rates", x = "Heart Rate", y = "Frequency", fill = "Cluster")
 ```
 
-While we explicitly stated a value for $K$ in this example, there are several methods that are used to automatically determine the number of clusters. We won't explore those methods here, but you can find plenty of resources on the web if you would like to do a deeper dive.
+While we explicitly stated a value for $K$ in this example, there are several methods that are used to automatically determine the number of clusters (for example, the "elbow" method, below). 
+
+![](./images/elbow_method.jpg)
+
+We won't explore those methods here, but you can find plenty of resources on the web if you would like to do a deeper dive.
 
 ## Manhattan ("Taxicab") distance
 
@@ -136,13 +142,13 @@ manhattan_distance <- function(x1, y1, x2, y2) {
 
 1. `euclidean_distance(2, 3, 5, 7)` # Result: 5. 
 
-   `manhattan_distance(2, 3, 5, 7)` # Result: 7.    
+   `manhattan_distance(2, 3, 5, 7)` # Result: 7.  
 
 ## K-Nearest Neighbors
 
 K-nearest neighbors (kNN) is another clustering algorithm where,for any point for which we want to predict a class, we look for the $k$ nearest points and then take an average of these points. 
 
-Let's use the eICU data we've been using this week and add a another predictor, `heartrate`, to our models so that now we are using `apachescore` and `heartrate` to predict mortality. 
+Let's use the eICU data we've been using this week and add another predictor, `heartrate`, to our models so that now we are using `apachescore` and `heartrate` to predict mortality. 
 
 ```{r load_data}
 # Load the data
@@ -208,8 +214,6 @@ confusionMatrix(tab)$overall["Accuracy"]
 
 We get slightly better accuracy and better sensitivity with $k$NN. 
 
-Let's take a look at the decision boundary for our model. 
-
 ```{r, echo=FALSE, fig.width=10.5, fig.height=5.25, fig.align="center", message = FALSE, warning=FALSE}
 # Define the range for apache score and heartrate
 x_range <- seq(0, 225, length.out = 200)
@@ -243,7 +247,6 @@ grid.arrange(g1,g2, nrow=1)
 
 When $k=5$, we see some islands of blue in the red area and vice versa. This is due to what we call _over training_ or _overfitting_.
 
-
 ## Overfitting
 
 Overfitting is at its worst when we set $k = 1$. In this case we will obtain nearly perfect accuracy in the training set because each point is used to predict itself. So perfect accuracy must happen by definition. However, the test set accuracy is actually worse than our logistic regression model.
@@ -275,20 +278,20 @@ f_hat <- predict(knn_fit_1, newdata = p_x)[,2]
 # Create the first plot (g1) to visualize the predicted probabilities across the grid
 g1 <- p_x %>% mutate(f_hat = f_hat) %>%
   ggplot(aes(apachescore, heartrate, fill = f_hat))  +
-  scale_fill_gradientn(colors=c("#F8766D","white","#00BFC4")) + geom_raster() +
+  scale_fill_gradientn(colors=c("#F8766D", "white", "#00BFC4")) + geom_raster() +
   guides(fill=FALSE) +  
-  stat_contour(aes(x=apachescore,y=heartrate,z=f_hat),data=p_x,breaks=c(0.5),color="black",lwd=1.5)
+  stat_contour(aes(x=apachescore, y=heartrate, z=f_hat),
+               data=p_x, breaks=c(0.5), color="black",lwd=1.5)
 
 # Create the second plot (g2) to visualize the training data points with the decision boundary
 g2 <- ggplot(p_x) +  
-  geom_point(data=train_set, aes(x=apachescore, y=heartrate, fill=as.factor(actualhospitalmortality)),  pch=21) + 
-  stat_contour(aes(apachescore,heartrate,z=f_hat), breaks=c(0.5),color="black",lwd=1.5) +
+  geom_point(data=train_set, aes(x=apachescore, y=heartrate, fill=as.factor(actualhospitalmortality)), pch=21) + 
+  stat_contour(aes(apachescore, heartrate, z=f_hat), breaks=c(0.5), color="black",lwd=1.5) +
   guides(fill=guide_legend(title="Mortality"))
   
 # Arrange the two plots (g1 and g2) side by side in a single row
-grid.arrange(g1,g2, nrow=1)
+grid.arrange(g1, g2, nrow=1)
 ``` 
-
 
 With $k = 7$ we obtain what looks like a reasonable estimate of the true $f$. There are still a couple of red islands in the red area, but it's probably our best effort for this particular $k$NN model.
 
@@ -307,16 +310,16 @@ g1 <- p_x %>% mutate(f_hat = f_hat) %>%
   scale_fill_gradientn(colors=c("#F8766D","white","#00BFC4")) + 
   geom_raster() +
   guides(fill=FALSE) +  
-  stat_contour(aes(x=apachescore,y=heartrate,z=f_hat),data=p_x, breaks=c(0.5),color="black",lwd=1.5)
+  stat_contour(aes(x=apachescore, y=heartrate, z=f_hat),data=p_x, breaks=c(0.5), color="black",lwd=1.5)
 
 # Create the second plot (g2) to visualize the training data points with the decision boundary
 g2 <- ggplot(p_x) +  
-  geom_point(data=train_set, aes(apachescore, heartrate, fill = as.factor(actualhospitalmortality)),pch=21) +
-  stat_contour(aes(x=apachescore,y=heartrate,z=f_hat), breaks=c(0.5),color="black",lwd=1.5) +
+  geom_point(data=train_set, aes(apachescore, heartrate, fill = as.factor(actualhospitalmortality)), pch=21) +
+  stat_contour(aes(x=apachescore, y=heartrate, z=f_hat), breaks=c(0.5), color="black",lwd=1.5) +
   guides(fill=guide_legend(title="Mortality"))
 
 # Arrange the two plots (g1 and g2) side by side in a single row
-grid.arrange(g1,g2, nrow=1)  
+grid.arrange(g1, g2, nrow=1)  
 ``` 
 
 
@@ -333,6 +336,35 @@ tab <- table(pred = round(f_hat), truth = test_set$actualhospitalmortality)
 confusionMatrix(tab)$overall["Accuracy"]
 ```
 
+## Exercise
 
+1. How does the choice of $k$ in k-NN affect the model's tendency to overfit or underfit the data?
 
+2. What is one strategy to mitigate overfitting in k-NN?
+
+3. What resampling method could we use to select an optimal value for $k$?
+
+## Solution
+
+1. A smaller $k$ leads to more complex decision boundaries, increasing the risk of overfitting as the model captures noise in the training data.
+
+2. Larger $k$ values smooth the decision boundary but may lead to underfitting by oversimplifying the data structure.
+
+3. Cross-validation can help select an optimal $k$ by evaluating model performance on different subsets of the data.
+
+## Curse of dimensionality
+
+In machine learning, the "curse of dimensionality" refers to problems that arise in very high-dimensional spaces. Put simply, when we add features, our distances start to become less informative. In very high-dimensional spaces, datasets become increasingly "sparse". Sparse data, can lead to issues such as overfitting.
+
+## Exercise
+
+1. How might the curse of dimensionality impact the performance of distance-based algorithms like k-NN and K-Means?
+
+2. How might you reduce dimensionality?
+
+## Solution
+
+1. Distance metrics become less effective in high-dimensional spaces, making it difficult for algorithms to find meaningful patterns.
+
+2. Feature selection is one way to reduce dimensions while retaining important information, leading to more robust and interpretable models.
 
