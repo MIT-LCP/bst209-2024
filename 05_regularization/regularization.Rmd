@@ -176,6 +176,15 @@ You can see a similar trend for the lasso coefficient plot, but the coefficients
 plot(fit_lasso, xvar = "lambda")
 ```
 
+## Cross-validation
+
+`cv.glmnet` is a built-in function that will run cross-validation to identify the best tuning parameter (lambda) for your model. The model specification and arguments are very similar to those for `glmnet`. By default, `cv.glmnet` uses 10-fold cross-validation.
+
+```{r}
+fit_ridge = cv.glmnet(X_train, y_train, family = "binomial", alpha = 1)
+fit_lasso = cv.glmnet(X_train, y_train, family = "binomial", alpha = 0)
+```
+
 
 ## Root mean-square error (RMSE)
 
@@ -200,4 +209,42 @@ sapply(list(Logistic = fit_logistic, Ridge = fit_ridge, Lasso = fit_lasso),
 While it is true that the logistic regression test RMSE is the worst (largest) and the lasso test RMSE is the best (smallest), all three models appear to be performing similarly well.
 
 Probably the greatest advantage of using the lasso model in this case is not so much due to performance gains as it is having a much smaller and more interpretable model. 
+
+## Overall Accuracy
+
+We can also calculate the confusion matrices and overall accuracy for each model.
+
+```{r}
+# Logistic model
+y_hat_logit <- predict(fit_logistic, X_test, type="response")
+y_hat_logit = round(y_hat_logit,0)
+
+tab <- table(pred = y_hat_logit, truth = as.numeric(y_test))
+
+confusionMatrix(tab)$tab
+confusionMatrix(tab)$overall["Accuracy"]
+```
+
+```{r}
+# Ridge model
+y_hat_ridge <- predict(fit_ridge, X_test, type="response", s=fit_ridge$lambda.min)
+y_hat_ridge = round(y_hat_ridge,0)
+
+tab <- table(pred = y_hat_ridge, truth = as.numeric(y_test))
+
+confusionMatrix(tab)$tab
+confusionMatrix(tab)$overall["Accuracy"]
+```
+
+```{r}
+# LASSO model
+y_hat_lasso <- predict(fit_lasso, X_test, type="response", s=fit_lasso$lambda.min)
+y_hat_lasso = round(y_hat_lasso,0)
+
+tab <- table(pred = y_hat_lasso, truth = as.numeric(y_test))
+
+confusionMatrix(tab)$tab
+confusionMatrix(tab)$overall["Accuracy"]
+```
+We see that logisitic regression has the smallest accuracy and LASSO has the largest, but all 3 models are performing similarly. 
 
