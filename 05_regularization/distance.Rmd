@@ -53,10 +53,12 @@ The algorithm aims to minimize the distance between points within each cluster a
 
 ### How K-means works
 
-1. Initialization: Choose the number of clusters ($K$) and randomly select ($K$) data points as initial centroids.
+1. Initialization: Choose the number of clusters ($K$) and randomly select ($K$) data points as initial centroids aka "means".
 2. Assignment: Assign each data point to the nearest centroid based on Euclidean distance.
 3. Update: Calculate new centroids as the mean of all points assigned to each cluster.
 Iteration: Repeat the assignment and update steps until the centroids no longer change significantly or a maximum number of iterations is reached.
+
+![](./images/kmeans.jpg)
 
 ### Example: Clustering Heart Rates of Adults and Pediatric Patients
 
@@ -107,11 +109,11 @@ Conceptually, you can think of Manhattan distance as the route your taxi would t
 We will learn more about the use cases for Euclidean and Manhattan distances later, when we explore regularization. The Manhattan distance is the concept behind the L1 norm (also known as the Manhattan norm or Taxicab norm) and the L2 norm is also known as the Euclidean norm.
 
 
-## k Nearest Neighbors
+## K-Nearest Neighbors
 
-K-nearest neighbors (kNN) is another clustering algorithm. We first define the distance between all observations based on the features (covariates). Basically, for any point $\bf{x}$ for which we want an estimate of $p(\bf{x})$, we look for the $k$ nearest points and then take an average of these points. This gives us an estimate of $p(x_1,x_2)$. We can now control flexibility through $k$. 
+K-nearest neighbors (kNN) is another clustering algorithm where,for any point for which we want to predict a class, we look for the $k$ nearest points and then take an average of these points. 
 
-Let's add a predictor to our model - `admissionweight`.
+Let's use the eICU data we've been using this week and add a another predictor, `heartrate`, to our models so that now we are using `apachescore` and `heartrate` to predict mortality. 
 
 ```{r load_data}
 # Load the data
@@ -144,6 +146,10 @@ y_hat_test_prob <- predict(log_model, test_set[features], type="response")
 
 # Round the probabilities to give 0 and 1 predictions (on 50% threshold)
 y_hat_test_class = round(y_hat_test_prob,0)
+
+tab <- table(pred = y_hat_test_class, truth = test_set$actualhospitalmortality)
+confusionMatrix(tab)$tab
+confusionMatrix(tab)$overall["Accuracy"]
 ```
 
 Now, lets compare to kNN. Let's start with the default $k = 5$
@@ -155,6 +161,9 @@ tab <- table(pred = round(f_hat), truth = test_set$actualhospitalmortality)
 confusionMatrix(tab)$tab
 confusionMatrix(tab)$overall["Accuracy"]
 ```
+We get slightly better accuracy and better sensitivity with $k$NN. 
+
+Let's take a look at the decision boundary for our model. 
 
 ```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center", message = FALSE, warning=FALSE}
 # Define the range for apache score and heartrate
@@ -183,22 +192,12 @@ grid.arrange(g1,g2, nrow=1)
 ``` 
 
 
-When $k=5$, we see some islands of blue in the red area. This is due to what we call _over training_ or _overfitting_. Note that we have higher accuracy in the train set compared to the test set:
-
-```{r}
-f_hat <- predict(knn_model, newdata = test_set)[,2]
-tab <- table(pred = round(f_hat), truth = test_set$actualhospitalmortality)
-confusionMatrix(tab)$overall["Accuracy"]
-
-f_hat_train <- predict(knn_model, newdata = train_set)[,2]
-tab <- table(pred = round(f_hat_train), truth=train_set$actualhospitalmortality)
-confusionMatrix(tab)$overall["Accuracy"]
-```
+When $k=5$, we see some islands of blue in the red area and vice versa. This is due to what we call _over training_ or _overfitting_.
 
 
 ## Overfitting
 
-Overfitting is at its worse when we set $k = 1$. In this case we will obtain nearly perfect accuracy in the training set because each point is used to predict itself. So perfect accuracy must happen by definition. However, the test set accuracy is actually worse than logistic regression.
+Overfitting is at its worst when we set $k = 1$. In this case we will obtain nearly perfect accuracy in the training set because each point is used to predict itself. So perfect accuracy must happen by definition. However, the test set accuracy is actually worse than our logistic regression model.
 
 ```{r}
 knn_fit_1 <- knn3(actualhospitalmortality ~ apachescore + heartrate, data = train_set, k=1)
@@ -212,7 +211,7 @@ tab <- table(pred = round(f_hat), truth = test_set$actualhospitalmortality)
 confusionMatrix(tab)$overall["Accuracy"]
 ```
 
-We can see the overfitting problem in this figure:
+We can see the overfitting problem in this figure where there are a lot of blue islands in the red area. 
 
 ```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center", warning=FALSE}
 f_hat <- predict(knn_fit_1, newdata = p_x)[,2]
@@ -231,50 +230,8 @@ library(gridExtra)
 grid.arrange(g1,g2, nrow=1)
 ``` 
 
-We can also underfit our model. Look at what happens with 50 closest neighbors:
 
-```{r}
-knn_fit_17 <- knn3(actualhospitalmortality ~ apachescore + heartrate, data = train_set, k=17)
-
-f_hat <- predict(knn_fit_17, newdata = test_set)[,2]
-tab <- table(pred = round(f_hat), truth = as.factor(test_set$actualhospitalmortality))
-confusionMatrix(tab)$overall["Accuracy"]
-```
-
-This turns out to be similar to logistic regression:
-```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center", warning=FALSE}
-f_hat <- predict(knn_fit_17, newdata = p_x)[,2]
-g1 <- p_x %>% mutate(f_hat = f_hat) %>%
-  ggplot(aes(apachescore, heartrate, fill = f_hat))  +
-  scale_fill_gradientn(colors=c("#F8766D","white","#00BFC4")) + geom_raster() +
-  guides(fill=FALSE) +  
-  stat_contour(aes(x=apachescore,y=heartrate,z=f_hat),data=p_x,breaks=c(0.5),color="black",lwd=1.5)
-
-g2 <- ggplot(p_x) +  
-  geom_point(data=train_set, aes(x=apachescore, y=heartrate, fill=as.factor(actualhospitalmortality)),  pch=21) + 
-  stat_contour(aes(apachescore,heartrate,z=f_hat), breaks=c(0.5),color="black",lwd=1.5) +
-  guides(fill=guide_legend(title="Mortality"))
-  
-library(gridExtra)
-grid.arrange(g1,g2, nrow=1)
-``` 
-
-Let's plot the accuracy for different numbers of closest neighbors.
-```{r}
-control <- trainControl(method = 'cv', number = 2, p = 0.5)
-dat2 <- mutate(cohort, label=as.factor(actualhospitalmortality)) %>%
-  select(label,apachescore,heartrate)
-res <- train(label ~ .,
-             data = dat2,
-             method = "knn",
-             trControl = control,
-             tuneLength = 1, # How fine a mesh to go on grid
-             tuneGrid=data.frame(k=seq(1,17)),
-             metric="Accuracy")
-plot(res)
-```
-
-With $k = 7$ we obtain what appears to be a decent estimate of the true $f$.
+With $k = 7$ we obtain what appears to be a decent estimate of the true $f$. There are still a couple of red islands in the red area, but it's as good as we'll get for this particular model using $k$NN.
 
 ```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center", warning=FALSE}
 knn_fit_7 <- knn3(actualhospitalmortality ~ apachescore + heartrate, data = train_set, k=7)
