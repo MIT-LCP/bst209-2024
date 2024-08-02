@@ -51,6 +51,22 @@ In regression, the standard linear model $Y = \beta_0 + \beta_1X_1 + ... + \beta
 Regularization techniques help to improve model performance and interpretability, while decreasing variance. We'll look at a popular approach for regularization known as "shrinkage".
 Shrinkage methods reduce variance by shrinking coefficient estimates toward zero. Examples include ridge regression and lasso.
 
+## Exercise
+
+1. Explain the bias-variance tradeoff using examples of a simple model and a complex model. How do these models differ in terms of bias and variance?
+
+2. How does regularization help manage the bias-variance tradeoff in machine learning models?
+
+3. Provide a real-world example where balancing bias and variance is crucial for model performance.
+
+## Solution
+
+1. Simple models have high bias but low variance, as they cannot capture the complexity of the data. Complex models have low bias but high variance, as they fit the training data too closely, capturing noise.
+
+2. Regularization introduces a penalty to model complexity, shrinking coefficients and reducing variance at the cost of increasing bias. This tradeoff helps achieve better generalization.
+
+3. In almost all predictive tasks (including our mortality prediction example), overfitting will lead to unreliable performance, so balancing bias and variance is essential.
+
 ### Ridge regression
 
 If we have $n$ observations and want to predict a response variable $Y$ using linear regression on $p$ covariates $X_1, X_2,...,X_p$, we are trying to find the coefficients $\beta_0, \beta_1, \beta_2, ..., \beta_p$ ($\beta_0$ is the intercept) that minimize the residual sum of squares (RSS): 
