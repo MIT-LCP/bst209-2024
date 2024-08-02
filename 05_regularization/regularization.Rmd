@@ -151,6 +151,7 @@ We aim to predict 2017 hospitalization rates based on 2016 data. The data loaded
 ```{r}
 # Read in subset of MEPS data
 load("meps.rData")
+
 # Predictor variables
 predictors = setdiff(names(meps), "Anyhosp2017")
 ```
@@ -189,14 +190,17 @@ y_test = y[-train_idx]
 We're ready to try fitting some models using `glmnet`! Our response variable is binary, so we want to specify `family = "binomial"`, similarly to the `glm` function. (The default is `"gaussian"`, for regression.) If we pass in `lambda = 0`, this call is equivalent to the usual logistic regression. (Why?)
 
 ```{r}
+# Fit our model
 fit_logistic = glmnet(X_train, y_train, family = "binomial", lambda = 0)
 ```
 
-In order to actually shrink our coefficients, we need to pass in one or more non-zero values to the `lambda` argument. Or, if we don't specify anything at all, `glmnet` will automatically generate a grid of 100 $\lambda$ values to try. The key parameter to watch out for is `alpha`. If we want to fit a ridge regression model, we set `alpha = 1`. If we want lasso, we set `alpha = 0`. 
+In order to actually shrink our coefficients, we need to pass in one or more non-zero values to the `lambda` argument. Or, if we don't specify anything at all, `glmnet` will automatically generate a grid of 100 $\lambda$ values to try.
+
+The key parameter to watch out for is `alpha`. If we want to fit a ridge regression model, we set `alpha = 0`. If we want lasso, we set `alpha = 1`. 
 
 ```{r}
-fit_ridge = glmnet(X_train, y_train, family = "binomial", alpha = 1)
-fit_lasso = glmnet(X_train, y_train, family = "binomial", alpha = 0)
+fit_ridge = glmnet(X_train, y_train, family = "binomial", alpha = 0)
+fit_lasso = glmnet(X_train, y_train, family = "binomial", alpha = 1)
 ```
 
 `glmnet` has many, many more arguments that you can play around with, but the defaults are usually reasonable for most scenarios. Calling `plot` on a fitted `glmnet` object will plot the coefficients for the sequence of $\lambda$ values used by the model.
@@ -218,10 +222,9 @@ plot(fit_lasso, xvar = "lambda")
 `cv.glmnet` is a built-in function that will run cross-validation to identify the best tuning parameter (lambda) for your model. The model specification and arguments are very similar to those for `glmnet`. By default, `cv.glmnet` uses 10-fold cross-validation.
 
 ```{r}
-fit_ridge = cv.glmnet(X_train, y_train, family = "binomial", alpha = 1)
-fit_lasso = cv.glmnet(X_train, y_train, family = "binomial", alpha = 0)
+fit_ridge = cv.glmnet(X_train, y_train, family = "binomial", alpha = 0)
+fit_lasso = cv.glmnet(X_train, y_train, family = "binomial", alpha = 1)
 ```
-
 
 ## Root mean-square error (RMSE)
 
@@ -283,5 +286,6 @@ tab <- table(pred = y_hat_lasso, truth = as.numeric(y_test))
 confusionMatrix(tab)$tab
 confusionMatrix(tab)$overall["Accuracy"]
 ```
+
 We see that logisitic regression has the smallest accuracy and LASSO has the largest, but all 3 models are performing similarly. 
 
