@@ -109,6 +109,34 @@ Conceptually, you can think of Manhattan distance as the route your taxi would t
 
 We will learn more about the use cases for Euclidean and Manhattan distances later, when we explore regularization. The Manhattan distance is the concept behind the L1 norm (also known as the Manhattan norm or Taxicab norm) and the L2 norm is also known as the Euclidean norm.
 
+## Calculating Euclidean and Manhattan Distances
+
+*Euclidean*:
+
+```{r}
+euclidean_distance <- function(x1, y1, x2, y2) {
+  sqrt((x2 - x1)^2 + (y2 - y1)^2)
+}
+```
+
+*Manhattan*:
+
+```{r}
+manhattan_distance <- function(x1, y1, x2, y2) {
+  abs(x2 - x1) + abs(y2 - y1)
+}
+```
+
+## Exercise
+
+1. Calculate the Euclidean and Manhattan distance between point `A(2,3)` and `B(5,7)`.
+
+
+## Solution
+
+1. `euclidean_distance(2, 3, 5, 7)` # Result: 5. 
+
+   `manhattan_distance(2, 3, 5, 7)` # Result: 7.    
 
 ## K-Nearest Neighbors
 
@@ -262,7 +290,7 @@ grid.arrange(g1,g2, nrow=1)
 ``` 
 
 
-With $k = 7$ we obtain what appears to be a decent estimate of the true $f$. There are still a couple of red islands in the red area, but it's as good as we'll get for this particular model using $k$NN.
+With $k = 7$ we obtain what looks like a reasonable estimate of the true $f$. There are still a couple of red islands in the red area, but it's probably our best effort for this particular $k$NN model.
 
 ```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center", warning=FALSE}
 # Fit a k-Nearest Neighbors model using the training data
