@@ -98,11 +98,32 @@ So instead of summing over the squares of the $\beta_j$s (the $L_2$ norm) in the
 The penalty term $\lambda \sum_{j=1}^p |\beta_j|$ is known as the L1 norm. Unlike ridge regression, which shrinks coefficients continuously, lasso can shrink some coefficients to *exactly* zero, effectively performing __variable selection__.
 
 - Lasso encourages sparsity, making the model easier to interpret by selecting a smaller subset of predictors.
+
 - The choice of $\lambda$ balances the trade-off between variance reduction and bias introduction.
+
 -  As $\lambda$ increases, more and more of the coefficients will be exactly zero, so unlike ridge regression, lasso performs variable selection!
 
 Because lasso models for a given problem tend to have fewer predictors, they are sometimes called *sparse models* and are often easier to interpret than ridge regression models.
 
+## Exercise
+
+1. Compare ridge regression and lasso in terms of their penalty terms and effects on model coefficients. How do these techniques address overfitting?
+
+2. How do L1 and L2 regularization relate to the distance metrics discussed in our earlier workshop?
+
+3. In what situations might you prefer lasso over ridge regression and vice versa? Provide examples.
+
+4. Discuss how regularization affects model interpretability and performance.
+
+## Solution
+
+1. Ridge regression uses the L2 norm, shrinking all coefficients but keeping them non-zero. Lasso uses the L1 norm, encouraging sparsity by setting some coefficients to zero.
+
+2. L1 regularization corresponds to Manhattan distance (sum of absolute values). L2 regularization corresponds to Euclidean distance (sum of squared values).
+
+3. Lasso is preferred when feature selection is important, as it results in sparser models. Ridge regression is useful when all features are potentially relevant (e.g. but multicollinearity needs to be addressed).
+
+4. Regularization improves performance by controlling overfitting and enhances interpretability by simplifying models, particularly with lasso's variable selection.
 
 ## $K$-fold cross-validation
 
