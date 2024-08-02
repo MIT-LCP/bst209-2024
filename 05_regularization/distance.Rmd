@@ -152,7 +152,7 @@ manhattan_distance <- function(x1, y1, x2, y2) {
 
 ## K-Nearest Neighbors
 
-K-nearest neighbors (kNN) is another clustering algorithm. With kNN, for any point for which we want to predict a class, we look for the $k$ nearest points and then take an average of these points. 
+K-nearest neighbors (kNN) is another distance-based algorithm (this time supervised). With kNN, for any point for which we want to predict a class, we look for the $k$ nearest points and then take an average of these points. 
 
 Let's use the eICU data we've been using this week and add another predictor, `heartrate`, to our models so that now we are using `apachescore` and `heartrate` to predict mortality. 
 
