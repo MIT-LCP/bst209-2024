@@ -17,6 +17,8 @@ In this lesson, we will explore the concept of distance in the context of machin
 
 Many of the analyses we perform with high-dimensional data relate directly or indirectly to distance. Many clustering and machine learning techniques rely on being able to define distance, using features or predictors. 
 
+*While we aren't do any kind of scaling of variables in this exercise, in practice you'll probably want to do this when working on any distance-based task.*
+
 ## Euclidean Distance
 
 In machine learning and data analysis, various distance metrics are used depending on the nature of the data and the problem at hand. Euclidean distance is the most common, and most likely the most familiar to you too.
