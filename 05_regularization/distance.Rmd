@@ -11,6 +11,7 @@ library(caret)
 library(dplyr)
 library(dslabs)
 library(rafalib)
+library(gridExtra)
 ds_theme_set()
 ```
 
@@ -56,7 +57,7 @@ The algorithm aims to minimize the distance between points within each cluster a
 1. Initialization: Choose the number of clusters ($K$) and randomly select ($K$) data points as initial centroids aka "means".
 2. Assignment: Assign each data point to the nearest centroid based on Euclidean distance.
 3. Update: Calculate new centroids as the mean of all points assigned to each cluster.
-Iteration: Repeat the assignment and update steps until the centroids no longer change significantly or a maximum number of iterations is reached.
+4. Iteration: Repeat the assignment and update steps until the centroids no longer change significantly or a maximum number of iterations is reached.
 
 ![](./images/kmeans.jpg)
 
@@ -141,13 +142,18 @@ log_model <- glm(actualhospitalmortality ~ apachescore + heartrate, data = train
 Now predict outcomes of patients in the test set:
 
 ```{r predict}
-# Generate predictions (and print the first 10 predictions)
+# Generate predicted probabilities for the test set using the logistic regression model
+# Specify 'type = "response"' to obtain probabilities instead of log-odds
 y_hat_test_prob <- predict(log_model, test_set[features], type="response")
 
-# Round the probabilities to give 0 and 1 predictions (on 50% threshold)
+# Convert the predicted probabilities into binary class predictions (0 or 1)
+# Use a threshold of 0.5 to decide the class; probabilities >= 0.5 are rounded to 1, others to 0
 y_hat_test_class = round(y_hat_test_prob,0)
 
+# Create a confusion matrix to compare the predicted classes with the actual outcomes in the test set
 tab <- table(pred = y_hat_test_class, truth = test_set$actualhospitalmortality)
+
+# Output the confusion matrix and compute accuracy
 confusionMatrix(tab)$tab
 confusionMatrix(tab)$overall["Accuracy"]
 ```
@@ -155,25 +161,40 @@ confusionMatrix(tab)$overall["Accuracy"]
 Now, lets compare to kNN. Let's start with the default $k = 5$
 
 ```{r}
+# Fit a k-Nearest Neighbors model using the training data
+# By default, the number of neighbors (k) will be set to 5
 knn_model <- knn3(actualhospitalmortality ~ apachescore + heartrate, data = train_set)
+
+# Predict the class probabilities for the test set using the fitted kNN model
+# Extract the second column which contains the predicted probabilities for the positive class
 f_hat <- predict(knn_model, newdata = test_set)[,2]
+
+# Create a confusion matrix by rounding the predicted probabilities to binary values
+# Compare predicted classes with the actual mortality outcomes in the test set
 tab <- table(pred = round(f_hat), truth = test_set$actualhospitalmortality)
+
+# Output the confusion matrix
 confusionMatrix(tab)$tab
 confusionMatrix(tab)$overall["Accuracy"]
 ```
+
 We get slightly better accuracy and better sensitivity with $k$NN. 
 
 Let's take a look at the decision boundary for our model. 
 
-```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center", message = FALSE, warning=FALSE}
+```{r, echo=FALSE, fig.width=10.5, fig.height=5.25, fig.align="center", message = FALSE, warning=FALSE}
 # Define the range for apache score and heartrate
 x_range <- seq(0, 225, length.out = 200)
 y_range <- seq(0, 200, length.out = 200)
 
-# Create the grid of values
+# Create a grid of all combinations of 'apachescore' and 'heartrate' values
 p_x <- expand.grid(apachescore = x_range, heartrate = y_range)
 
+# Use the kNN model to predict the probability of mortality for each point in the grid
+# 'f_hat' represents the predicted probabilities
 f_hat <- predict(knn_model, newdata = p_x)[,2]
+
+# Create the first plot (g1) showing the decision boundary using a color gradient
 g1 <- p_x %>% mutate(f_hat = f_hat) %>%
   ggplot(aes(apachescore, heartrate, fill = f_hat))  +
   scale_fill_gradientn(colors=c("#F8766D","white","#00BFC4")) + 
@@ -181,13 +202,13 @@ g1 <- p_x %>% mutate(f_hat = f_hat) %>%
   guides(fill=FALSE) +  
   stat_contour(aes(x=apachescore,y=heartrate,z=f_hat),data=p_x, breaks=c(0.5),color="black",lwd=1.5)
 
-
+# Create the second plot (g2) showing the actual data points with the decision boundary
 g2 <- ggplot(p_x) +
   geom_point(data=train_set, aes(x=apachescore, y=heartrate, fill=as.factor(actualhospitalmortality)), pch=21) + 
   stat_contour(aes(x=apachescore, y=heartrate,z=f_hat), breaks=c(0.5),color="black",lwd=1.5) +
   guides(fill=guide_legend(title="Mortality"))
 
-library(gridExtra)
+# Arrange the two plots (g1 and g2) side by side in a single row
 grid.arrange(g1,g2, nrow=1)
 ``` 
 
@@ -200,12 +221,17 @@ When $k=5$, we see some islands of blue in the red area and vice versa. This is 
 Overfitting is at its worst when we set $k = 1$. In this case we will obtain nearly perfect accuracy in the training set because each point is used to predict itself. So perfect accuracy must happen by definition. However, the test set accuracy is actually worse than our logistic regression model.
 
 ```{r}
+# Fit a k-Nearest Neighbors model using the training data
+# We set k = 1 to consider the closest single neighbor for classification
 knn_fit_1 <- knn3(actualhospitalmortality ~ apachescore + heartrate, data = train_set, k=1)
 
+# Predict the class probabilities on the training set using the kNN model
 f_hat <- predict(knn_fit_1, newdata = train_set)[,2]
 tab <- table(pred = round(f_hat), truth = train_set$actualhospitalmortality)
 confusionMatrix(tab)$overall["Accuracy"]
 
+# Create a confusion matrix by rounding the predicted probabilities to binary values
+# Compare predicted classes with the actual mortality outcomes in the training set
 f_hat <- predict(knn_fit_1, newdata = test_set)[,2]
 tab <- table(pred = round(f_hat), truth = test_set$actualhospitalmortality)
 confusionMatrix(tab)$overall["Accuracy"]
@@ -214,19 +240,24 @@ confusionMatrix(tab)$overall["Accuracy"]
 We can see the overfitting problem in this figure where there are a lot of blue islands in the red area. 
 
 ```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center", warning=FALSE}
+# Predict the class probabilities for each point in the grid using the kNN model
+# Extract the second column which contains the predicted probabilities for the positive class
 f_hat <- predict(knn_fit_1, newdata = p_x)[,2]
+
+# Create the first plot (g1) to visualize the predicted probabilities across the grid
 g1 <- p_x %>% mutate(f_hat = f_hat) %>%
   ggplot(aes(apachescore, heartrate, fill = f_hat))  +
   scale_fill_gradientn(colors=c("#F8766D","white","#00BFC4")) + geom_raster() +
   guides(fill=FALSE) +  
   stat_contour(aes(x=apachescore,y=heartrate,z=f_hat),data=p_x,breaks=c(0.5),color="black",lwd=1.5)
 
+# Create the second plot (g2) to visualize the training data points with the decision boundary
 g2 <- ggplot(p_x) +  
   geom_point(data=train_set, aes(x=apachescore, y=heartrate, fill=as.factor(actualhospitalmortality)),  pch=21) + 
   stat_contour(aes(apachescore,heartrate,z=f_hat), breaks=c(0.5),color="black",lwd=1.5) +
   guides(fill=guide_legend(title="Mortality"))
   
-library(gridExtra)
+# Arrange the two plots (g1 and g2) side by side in a single row
 grid.arrange(g1,g2, nrow=1)
 ``` 
 
@@ -234,9 +265,15 @@ grid.arrange(g1,g2, nrow=1)
 With $k = 7$ we obtain what appears to be a decent estimate of the true $f$. There are still a couple of red islands in the red area, but it's as good as we'll get for this particular model using $k$NN.
 
 ```{r, echo=FALSE, fig.width=10.5,fig.height=5.25, fig.align="center", warning=FALSE}
+# Fit a k-Nearest Neighbors model using the training data
+# Set k = 7 to consider the 7 nearest neighbors for classification
 knn_fit_7 <- knn3(actualhospitalmortality ~ apachescore + heartrate, data = train_set, k=7)
+
+# Predict the class probabilities for each point in the grid using the kNN model
+# Extract the second column which contains the predicted probabilities for the positive class
 f_hat <- predict(knn_fit_7, newdata = p_x)[,2]
 
+# Create the first plot (g1) to visualize the predicted probabilities across the grid
 g1 <- p_x %>% mutate(f_hat = f_hat) %>%
   ggplot(aes(apachescore, heartrate, fill = f_hat))  +
   scale_fill_gradientn(colors=c("#F8766D","white","#00BFC4")) + 
@@ -244,19 +281,27 @@ g1 <- p_x %>% mutate(f_hat = f_hat) %>%
   guides(fill=FALSE) +  
   stat_contour(aes(x=apachescore,y=heartrate,z=f_hat),data=p_x, breaks=c(0.5),color="black",lwd=1.5)
 
+# Create the second plot (g2) to visualize the training data points with the decision boundary
 g2 <- ggplot(p_x) +  
   geom_point(data=train_set, aes(apachescore, heartrate, fill = as.factor(actualhospitalmortality)),pch=21) +
   stat_contour(aes(x=apachescore,y=heartrate,z=f_hat), breaks=c(0.5),color="black",lwd=1.5) +
   guides(fill=guide_legend(title="Mortality"))
- 
-library(gridExtra)
+
+# Arrange the two plots (g1 and g2) side by side in a single row
 grid.arrange(g1,g2, nrow=1)  
 ``` 
 
 
 ```{r}
+# Predict the class probabilities for the test set using the kNN model with k = 7
+# Extract the second column which contains the predicted probabilities for the positive class
 f_hat <- predict(knn_fit_7, newdata = test_set)[,2]
+
+# Create a confusion matrix by rounding the predicted probabilities to binary values
+# Compare predicted classes with the actual mortality outcomes in the test set
 tab <- table(pred = round(f_hat), truth = test_set$actualhospitalmortality)
+
+# Calculate and retrieve the accuracy of the kNN model on the test set
 confusionMatrix(tab)$overall["Accuracy"]
 ```
 
