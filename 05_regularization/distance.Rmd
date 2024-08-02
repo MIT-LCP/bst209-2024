@@ -44,6 +44,8 @@ The euclidean distance between $A$ and $B$ is:
 
 $$\sqrt{ (A_x-B_x)^2 + (A_y-B_y)^2}$$
 
+In this context, finding the distance is the same formula we learn at school, when we find the length of the hypotenuse using Pythagoras theory $(a^2+b^2=c^2)$.
+
 ## K-means clustering
 
 An example of a machine learning algorithm that makes use of distance very directly is K-Means clustering. The K-means algorithm can be used to partition a dataset into distinct groups, or clusters. 
@@ -86,6 +88,7 @@ We can then demonstrate how K-means clustering might identify these distinct gro
 
 ```{r}
 # Apply K-means clustering with 2 clusters
+# n_start is a parameter that runs n different random initializations
 kmeans_result <- kmeans(heart_rate_data, centers = 2, nstart = 20)
 
 # Add the cluster assignments to the original data
