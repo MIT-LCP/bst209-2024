@@ -48,9 +48,7 @@ plot_model_pred_2d <- function(model, dataset, feature1, feature2, target, title
 }
 ```
 
-## Predicting the outcome of critical care patients
-
-We would like to develop an algorithm that can be used to predict the outcome of patients who are admitted to intensive care units using observations available on the day of admission.
+As a reminder of our original task, we would like to develop an algorithm that can be used to predict the outcome of patients who are admitted to intensive care units using observations available on the day of admission.
 
 Our analysis focuses on ~1000 patients admitted to critical care units in the continental United States. Data is provided by the Philips eICU Research Institute, a critical care telehealth program.
 
@@ -95,8 +93,9 @@ Here we see three nodes: a node at the top, a node in the lower left, and a node
 
 The top node is the root of the tree: it contains all the data. Within a node, we see:
 
-- 0: The majority class within the node.
-- [343, 377]: Current class balance. There are 343 observations of class 0 out of a total 377 observations.
+- `0`: The majority class within the node.  
+
+- `[343, 377]`: Current class balance. There are 343 observations of class 0 out of a total 377 observations.
 
 The model uses a measure of "impurity" to determine each split. The goal of the algorithm is to find a split with the lowest possible impurity in two resulting nodes. 
 
