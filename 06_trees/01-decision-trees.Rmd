@@ -1,0 +1,121 @@
+---
+title: "Decision Trees"
+output: "html_document"
+---
+
+```{r, echo=FALSE, message=FALSE, warnings=FALSE}
+library(tidyverse)
+library(caret)
+library(dplyr)
+library(rafalib)
+library(rpart)
+library(rpart.plot)
+library(ggplot2)
+library(gridExtra)
+library(rpart.plot)
+```
+
+```{r custom_plot, echo=FALSE, message=FALSE}
+# Custom plotting function
+# This function is reused in each workshop
+plot_model_pred_2d <- function(model, dataset, feature1, feature2, target, title, min_f1, max_f1, min_f2, max_f2) {
+  # Ensure dataset is a data frame
+  if (!is.data.frame(dataset)) {
+    dataset <- as.data.frame(dataset)
+  }
+
+  # Create a grid over the feature space
+  grid <- expand.grid(
+    feature1 = seq(min_f1, max_f1, length.out = 100),
+    feature2 = seq(min_f2, max_f2, length.out = 100)
+  )
+
+  # Set correct column names for grid
+  colnames(grid) <- c(feature1, feature2)
+
+  # Predict class for each point in the grid using the model
+  grid$predicted_class <- predict(model, newdata = grid, type = "class")
+
+  plot <- ggplot() +
+    geom_tile(data = grid, aes(x = .data[[feature2]], y = .data[[feature1]], fill = .data$predicted_class), alpha = 0.3) +
+    geom_point(data = dataset, aes(x = .data[[feature2]], y = .data[[feature1]], color = .data[[target]]), size = 2) +
+    labs(title = title, x = feature2, y = feature1) +
+    scale_fill_manual(values = c("red", "blue"), name = "Predicted Class") +
+    scale_color_manual(values = c("red", "blue"), name = "Actual Class") +
+    theme_minimal()
+
+    return(plot)
+}
+```
+
+## Predicting the outcome of critical care patients
+
+We would like to develop an algorithm that can be used to predict the outcome of patients who are admitted to intensive care units using observations available on the day of admission.
+
+Our analysis focuses on ~1000 patients admitted to critical care units in the continental United States. Data is provided by the Philips eICU Research Institute, a critical care telehealth program.
+
+We will use decision trees for this task. Decision trees are a family of intuitive “machine learning” algorithms that often perform well at prediction and classification.
+
+## The simplest tree
+
+Let's build the simplest tree model we can think of: a classification tree with only one split. Decision trees of this form are commonly referred to under the umbrella term Classification and Regression Trees (CART) [1].
+
+While we will only be looking at classification here, regression isn't too different. After grouping the data (which is essentially what a decision tree does), classification involves assigning all members of the group to the majority class of that group during training. Regression is the same, except you would assign the average value, not the majority.
+
+In the case of a decision tree with one split, often called a "stump", the model will partition the data into two groups, and assign classes for those two groups based on majority vote. There are many parameters available for the DecisionTreeClassifier class; by specifying max_depth=1 we will build a decision tree with only one split - i.e. of depth 1.
+
+[1] L. Breiman, J. Friedman, R. Olshen, and C. Stone. Classification and Regression Trees. Wadsworth, Belmont, CA, 1984.
+
+```{r load_data}
+# Load the data
+cohort <- read.csv("./eicu_cohort_trees.csv")
+features = c("acutephysiologyscore", "age")
+cohort$actualhospitalmortality = as.factor(cohort$actualhospitalmortality)
+```
+
+Next, create our training and test sets:
+
+```{r split_data}
+# Split the data into training and testing sets
+set.seed(150)
+train_index <- createDataPartition(cohort$apachescore, times = 1, p = 0.7, list = FALSE)
+train_set <- cohort[train_index, ]
+test_set <- cohort[-train_index, ]
+```
+
+```{r}
+# Create and fit the decision tree model
+mdl <- rpart(actualhospitalmortality ~ age + acutephysiologyscore, data = train_set, method = "class", control = rpart.control(maxdepth = 1))
+
+# Visualize the decision tree using rpart.plot
+rpart.plot(mdl, extra = 2)
+```
+
+Here we see three nodes: a node at the top, a node in the lower left, and a node in the lower right.
+
+The top node is the root of the tree: it contains all the data. Within a node, we see:
+
+- 0: The majority class within the node.
+- [343, 377]: Current class balance. There are 343 observations of class 0 out of a total 377 observations.
+
+The model uses a measure of "impurity" to determine each split. The goal of the algorithm is to find a split with the lowest possible impurity in two resulting nodes. 
+
+It does this by iteratively evaluating every feature (in our case, age and apachescore) at every possible split (46, 47, 48..). The approach is referred to as "greedy" because we are choosing the optimal split given our current state. 
+
+Let's take a closer look at our decision boundary.
+
+```{r}
+txt = "Decision Boundary of the Decision Tree"
+plot_model_pred_2d(mdl, train_set, "acutephysiologyscore", "age", "actualhospitalmortality",
+                   title = txt, 0, 200, 0, 100)
+```
+
+In this plot we can see the decision boundary on the y-axis, separating the predicted classes. The true classes are indicated at each point. Where the background and point colours are mismatched, there has been misclassification. Of course we are using a very simple model.
+
+## Key points
+
+- Decision trees are intuitive models that can be used for prediction and regression.
+
+- Typically models determine splits using a measure of "impurity". The higher the value, the bigger the mix of classes.
+
+- Greedy algorithms take the optimal decision at a single point, without considering the larger problem as a whole
