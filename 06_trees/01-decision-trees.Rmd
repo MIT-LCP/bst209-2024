@@ -54,13 +54,7 @@ Our analysis focuses on ~1000 patients admitted to critical care units in the co
 
 We will use decision trees for this task. Decision trees are a family of intuitive “machine learning” algorithms that often perform well at prediction and classification.
 
-## The simplest tree
-
-Let's build the simplest tree model we can think of: a classification tree with only one split. Decision trees of this form are commonly referred to under the umbrella term Classification and Regression Trees (CART) [1].
-
-In the case of a decision tree with one split, often called a "stump", the model will partition the data into two groups, and assign classes for those two groups based on majority vote. There are many parameters available for the DecisionTreeClassifier class; by specifying max_depth=1 we will build a decision tree with only one split - i.e. of depth 1.
-
-[1] L. Breiman, J. Friedman, R. Olshen, and C. Stone. Classification and Regression Trees. Wadsworth, Belmont, CA, 1984.
+Let's begin by loading our data:
 
 ```{r load_data}
 # Load the data
@@ -78,6 +72,16 @@ train_index <- createDataPartition(cohort$apachescore, times = 1, p = 0.7, list 
 train_set <- cohort[train_index, ]
 test_set <- cohort[-train_index, ]
 ```
+
+## The simplest tree
+
+Let's build the simplest tree model we can think of: a classification tree with only one split. Decision trees of this form are commonly referred to under the umbrella term Classification and Regression Trees (CART) [1].
+
+In the case of a decision tree with one split, often called a "stump", the model will partition the data into two groups, and assign classes for those two groups based on majority vote.
+
+There are many parameters available for the algorithm; by specifying `maxdepth=1` we will build a decision tree with only one split - i.e. of depth 1.
+
+[1] L. Breiman, J. Friedman, R. Olshen, and C. Stone. Classification and Regression Trees. Wadsworth, Belmont, CA, 1984.
 
 ```{r}
 # Create and fit the decision tree model
