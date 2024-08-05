@@ -111,6 +111,7 @@ Let's prune the model and look again.
 pruned_mdl <- prune(mdl, cp=0.05)
 rpart.plot(pruned_mdl, extra = 2, type=1)
 ```
+
 Above, we can see that our second tree is smaller in depth again. We can look at the decision surface for this tree:
 
 ```{r}
