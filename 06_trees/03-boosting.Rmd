@@ -1,0 +1,106 @@
+---
+title: "Boosting"
+output: "html_document"
+---
+
+```{r, echo=FALSE, message=FALSE, warnings=FALSE}
+# Helper packages
+library(dplyr)       # for data wrangling
+library(ggplot2)     # for plotting
+
+# Required Libraries
+library(rpart)
+library(rattle)
+library(rpart.plot)
+library(ggplot2)
+library(JOUSBoost)
+library(tidyverse)
+library(caret)
+library(dplyr)
+library(rafalib)
+
+# Model interpretability packages
+library(rpart.plot)  # for plotting decision trees
+library(vip)         # for feature importance
+```
+
+```{r custom_plot, echo=FALSE}
+# Custom plotting function
+# This function is reused in each workshop
+plot_model_pred_2d <- function(model, dataset, feature1, feature2, target, title, min_f1, max_f1, min_f2, max_f2) {
+  # Ensure dataset is a data frame
+  if (!is.data.frame(dataset)) {
+    dataset <- as.data.frame(dataset)
+  }
+  
+  # Create a grid over the feature space
+  grid <- expand.grid(
+    feature1 = seq(min_f1, max_f1, length.out = 100),
+    feature2 = seq(min_f2, max_f2, length.out = 100)
+  )
+  
+  # Set correct column names for grid
+  colnames(grid) <- c(feature1, feature2)
+
+  # Convert grid to matrix for prediction
+  grid_matrix <- as.matrix(grid)
+  
+  # Predict class for each point in the grid using the model
+  grid$predicted_class <- predict(model, X = grid_matrix, type = "response")
+  
+  # Convert predicted class to a factor for proper use in ggplot
+  grid$predicted_class <- factor(ifelse(grid$predicted_class > 0, 1, -1))
+  
+  plot <- ggplot() +
+    geom_tile(data = grid, aes(x = .data[[feature2]], y = .data[[feature1]], fill = .data$predicted_class), alpha = 0.3) +
+    geom_point(data = dataset, aes(x = .data[[feature2]], y = .data[[feature1]], color = .data[[target]]), size = 2) +
+    labs(title = title, x = feature2, y = feature1) +
+    scale_fill_manual(values = c("red", "blue"), name = "Predicted Class") +
+    scale_color_manual(values = c("red", "blue"), name = "Actual Class") +
+    theme_minimal()
+  
+    return(plot)
+}
+```
+
+
+```{r load_data}
+# Load the data
+cohort <- read.csv("./eicu_cohort_trees.csv")
+features = c("acutephysiologyscore", "age")
+cohort$actualhospitalmortality = as.factor(cohort$actualhospitalmortality)
+
+# adaboost implementation requires outcome as -1/1
+cohort$boosted_mortality <- ifelse(cohort$actualhospitalmortality == levels(cohort$actualhospitalmortality)[1], -1, 1)
+
+# Split the data into training and testing sets
+set.seed(42)
+train_index <- createDataPartition(cohort$acutephysiologyscore, times = 1, p = 0.7, list = FALSE)
+train_set <- cohort[train_index, ]
+test_set <- cohort[-train_index, ]
+```
+
+In the previous episode, we demonstrated that decision trees may have high "variance". Their performance can vary widely given different samples of data. An algorithm that performs somewhat poorly at a task - such as simple decision tree - is sometimes referred to as a "weak learner".
+
+The premise of boosting is the combination of many weak learners to form a single "strong" learner. In a nutshell, boosting involves building a models iteratively. At each step we focus on the data on which we performed poorly.
+
+![](./images/boosting.png)
+
+In our context, the first step is to build a tree using the data. Next, we look at the data that we misclassified, and re-weight the data so that we really wanted to classify those observations correctly, at a cost of maybe getting some of the other data wrong this time. Let's see how this works in practice.
+
+```{r}
+# Train AdaBoost model using JOUboost
+mdl <- adaboost(as.matrix(train_set[, features]), train_set$boosted_mortality, n_rounds = 50)
+
+# plot the final prediction
+title = 'Boosted tree (final decision surface)'
+plot <- plot_model_pred_2d(mdl, train_set, "acutephysiologyscore", "age", "actualhospitalmortality",
+                           title, 0, 200, 0, 100)
+print(plot)
+```
+
+## Key points
+
+- An algorithm that performs somewhat poorly at a task - such as simple decision tree - is sometimes referred to as a “weak learner”.
+
+- With boosting, we create a combination of many weak learners to form a single “strong” learner.
