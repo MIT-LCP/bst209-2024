@@ -50,6 +50,26 @@ plot_model_pred_2d <- function(model, dataset, feature1, feature2, target, title
 }
 ```
 
+Bootstrap aggregation, or "Bagging", is another form of ensemble learning. 
+
+With boosting, we iteratively changed the dataset to have new trees focus on the "difficult" observations. Bagging involves the same approach, except we don't selectively choose which observations to focus on, but rather we randomly select subsets of data each time. 
+
+Boosting aimed to iteratively improve our overall model with new trees. With bagging, we now build trees on what we hope are independent datasets.
+
+Let's take a step back, and think about a practical example. Say we wanted a good model of heart disease. If we saw researchers build a model from a dataset of patients from their hospital, we might think this would be sufficient. If the researchers were able to acquire a new dataset from new patients, and built a new model, we'd be inclined to feel that the combination of the two models would be better than any one individually. 
+
+This is the scenario that bagging aims to replicate, except instead of actually going out and collecting new datasets, we instead use "bootstrapping" to create new sets of data from our current dataset. If you are unfamiliar with bootstrapping, you can treat it as magic for now (and if you are familiar with the bootstrap, you already know that it is magic).
+
+Let's take a look at the individual trees within a simple bootstrap model.
+
+![](./images/bagging.png)
+
+We can see that each individual tree varies considerably. This is a result of using a random set of data to train the classifier. 
+
+Let's try creating a model ourselves.
+
+First, we'll prepare the data:
+
 ```{r load_data}
 # Load the data
 cohort <- read.csv("./eicu_cohort_trees.csv")
@@ -66,21 +86,7 @@ train_set <- cohort[train_index, ]
 test_set <- cohort[-train_index, ]
 ```
 
-Bootstrap aggregation, or "Bagging", is another form of ensemble learning. 
-
-With boosting, we iteratively changed the dataset to have new trees focus on the "difficult" observations. Bagging involves the same approach, except we don't selectively choose which observations to focus on, but rather we randomly select subsets of data each time. 
-
-Boosting aimed to iteratively improve our overall model with new trees. With bagging, we now build trees on what we hope are independent datasets.
-
-Let's take a step back, and think about a practical example. Say we wanted a good model of heart disease. If we saw researchers build a model from a dataset of patients from their hospital, we might think this would be sufficient. If the researchers were able to acquire a new dataset from new patients, and built a new model, we'd be inclined to feel that the combination of the two models would be better than any one individually. 
-
-This is the scenario that bagging aims to replicate, except instead of actually going out and collecting new datasets, we instead use "bootstrapping" to create new sets of data from our current dataset. If you are unfamiliar with bootstrapping, you can treat it as magic for now (and if you are familiar with the bootstrap, you already know that it is magic).
-
-Let's take a look at a simple bootstrap model.
-
-![](./images/bagging.png)
-
-We can see that each individual tree varies considerably. This is a result of using a random set of data to train the classifier.
+Now train the algorithm:
 
 ```{r}
 model = bagging(actualhospitalmortality ~ age + acutephysiologyscore, 
