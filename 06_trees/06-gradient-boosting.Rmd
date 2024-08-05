@@ -1,0 +1,101 @@
+---
+title: "Gradient Boosting"
+output: "html_document"
+---
+
+```{r, echo=FALSE, message=FALSE, warnings=FALSE}
+library(gbm)
+library(tidyverse)
+library(caret)
+library(dplyr)
+library(rafalib)
+```
+
+```{r custom_plot, echo=FALSE}
+# Custom plotting function
+# This function is reused in each workshop
+plot_model_pred_2d <- function(model, dataset, feature1, feature2, target, title, min_f1, max_f1, min_f2, max_f2) {
+  # Ensure dataset is a data frame
+  if (!is.data.frame(dataset)) {
+    dataset <- as.data.frame(dataset)
+  }
+  
+  # Create a grid over the feature space
+  grid <- expand.grid(
+    feature1 = seq(min_f1, max_f1, length.out = 100),
+    feature2 = seq(min_f2, max_f2, length.out = 100)
+  )
+  
+  # Set correct column names for grid
+  colnames(grid) <- c(feature1, feature2)
+  
+  # Predict probabilities for each point in the grid using the model
+  grid$predicted_prob <- predict(model, newdata = grid,
+                                 n.trees = gbm.perf(model, method = "cv", plot.it = FALSE), type = "response")
+  
+  # Convert probabilities to class labels
+  grid$predicted_class <- ifelse(grid$predicted_prob > 0.5, 1, 0)
+  
+  # Convert predicted_class to a factor
+  grid$predicted_class <- factor(grid$predicted_class, levels = c(0, 1))
+  
+  # Convert target to a factor
+  dataset[[target]] <- factor(dataset[[target]], levels = c(0, 1))
+
+  # Predict class for each point in the grid using the model
+  # grid$predicted_class <- predict(model, newdata = grid, type = "class")
+  
+  plot <- ggplot() +
+    geom_tile(data = grid, aes(x = .data[[feature2]], y = .data[[feature1]], fill = .data$predicted_class), alpha = 0.3) +
+    geom_point(data = dataset, aes(x = .data[[feature2]], y = .data[[feature1]], color = .data[[target]]), size = 2) +
+    labs(title = title, x = feature2, y = feature1) +
+    scale_fill_manual(values = c("red", "blue"), name = "Predicted Class") +
+    scale_color_manual(values = c("red", "blue"), name = "Actual Class") +
+    theme_minimal()
+  
+    return(plot)
+}
+```
+
+```{r load_data}
+# Load the data
+cohort <- read.csv("./eicu_cohort_trees.csv")
+features = c("acutephysiologyscore", "age")
+cohort$actualhospitalmortality = as.factor(cohort$actualhospitalmortality)
+
+# tree implementation requires outcome as 0/1
+cohort$actualhospitalmortality <- ifelse(cohort$actualhospitalmortality == levels(cohort$actualhospitalmortality)[1], 0, 1)
+
+# Split the data into training and testing sets
+set.seed(42)
+train_index <- createDataPartition(cohort$acutephysiologyscore, times = 1, p = 0.7, list = FALSE)
+train_set <- cohort[train_index, ]
+test_set <- cohort[-train_index, ]
+```
+
+Last, but not least, we move on to gradient boosting. Gradient boosting, our last topic, elegantly combines concepts from the previous methods. As a "boosting" method, gradient boosting involves iteratively building trees, aiming to improve upon misclassifications of the previous tree. Gradient boosting also borrows the concept of sub-sampling the variables (just like Random Forests), which can help to prevent overfitting.
+
+While it is too much to express in this tutorial, the biggest innovation in gradient boosting is that it provides a unifying mathematical framework for boosting models. The approach explicitly casts the problem of building a tree as an optimization problem, defining mathematical functions for how well a tree is performing (which we had before) and how complex a tree is. In this light, one can actually treat AdaBoost as a "special case" of gradient boosting, where the loss function is chosen to be the exponential loss.
+
+Let's build a gradient boosting model.
+
+```{r}
+mdl <- gbm(formula = actualhospitalmortality ~ age + acutephysiologyscore,
+           data = train_set, 
+           n.trees = 15,
+           cv.folds = 5,
+           distribution = "bernoulli")
+
+# plot the final prediction
+title = 'Gradient boosted model (final decision surface)'
+plot <- plot_model_pred_2d(mdl, train_set, "acutephysiologyscore", "age", "actualhospitalmortality",
+                           title, 0, 200, 0, 100)
+print(plot)
+```
+## Key points
+
+- As a “boosting” method, gradient boosting involves iteratively building trees, aiming to improve upon misclassifications of the previous tree.
+
+- Gradient boosting also borrows the concept of sub-sampling the variables (just like Random Forests), which can help to prevent overfitting.
+
+- The performance gains come at the cost of interpretability.
