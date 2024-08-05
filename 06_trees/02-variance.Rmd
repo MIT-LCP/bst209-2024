@@ -155,7 +155,9 @@ for (i in 1:3) {
 
 Above we can see that we are using random subsets of data, and as a result, our decision boundary can change quite a bit. As you could guess, we actually don’t want a model that randomly works well and randomly works poorly.
 
-There is an old joke: two farmers and a statistician go hunting. They see a deer: the first farmer shoots, and misses to the left. The next farmer shoots, and misses to the right. The statistician yells “We got it!”.
+![](./images/elmer-fudd.png)
+
+There is an old joke: two farmers and a statistician go hunting. They see a rabbit: the first farmer shoots, and misses to the left. The next farmer shoots, and misses to the right. The statistician yells “We got it!”.
 
 While it doesn’t quite hold in real life, it turns out that this principle does hold for decision trees. Combining them in the right way ends up building powerful models.
 
