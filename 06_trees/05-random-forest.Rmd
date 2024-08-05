@@ -46,7 +46,7 @@ plot_model_pred_2d <- function(model, dataset, feature1, feature2, target, title
 }
 ```
 
-In the previous example, we used bagging to randomly resample our data to generate "new" datasets. The Random Forest takes this one step further: instead of just resampling our data, we also select only a fraction of the features to include.
+In the previous example, we used bagging to randomly resample our data to generate "new" datasets. *Random Forests takes this one step further: instead of just resampling our data, we also select only a fraction of the features to include*.
 
 It turns out that this subselection tends to improve the performance of our models. The odds of an individual being very good or very bad is higher (i.e. the variance of the trees is increased), and this ends up giving us a final model with better overall performance (lower bias).
 
@@ -72,7 +72,9 @@ Here's a set of trees, plotted iteratively while training a Random Forest model:
 
 3) Our trees decided against splitting on Age. The model was unable to find a single Age that led to improvement (based on its optimisation criteria).  
 
-Let's train our own mdel and look at final model's decision surface. First, prepare our data:
+## Training a Random Forest
+
+Let's train our own model and look at final model's decision surface. First, prepare our data:
 
 ```{r load_data}
 # Load the data
