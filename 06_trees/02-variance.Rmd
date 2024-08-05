@@ -81,23 +81,24 @@ Now our tree is more complicated! We can see a few vertical boundaries as well a
 
 ```{r}
 # Visualize the decision tree using rpart.plot
-rpart.plot(mdl, extra = 2)
+rpart.plot(mdl, extra = 2, type=1)
 ```
 
 ## Exercise
 
-1) Consider a patient aged 80 years with an acute physiology score of 100. Using the image of the tree, work through the nodes until your can make a prediction. What outcome does your model predict?
+1) Consider a patient aged 80 years with an acute physiology score of 103. Using the image of the tree, work through the nodes until your can make a prediction. What outcome does your model predict? (Note: The lack of yes/no labels is confusing. For this R package, left appears to be "yes" and right "no".)
 
 2) Does the decision that led to this final node seem sensible to you? Why?
 
 ## Solution
 
 1) From the top of the tree, we would work our way down:
-   acutePhysiologyScore < 55? No.
-   acutePhysiologyScore < 111? Yes.
-   age < 76? No
-   acutePhysiologyScore < 79. Yes.
-   acutePhysiologyScore >= 101? No.
+
+   acutePhysiologyScore < 55? No.  
+   acutePhysiologyScore < 111? Yes.  
+   age < 76? No. 
+   acutePhysiologyScore < 79. Yes.  
+   acutePhysiologyScore >= 101? Yes (class 0). 
 
 2) Having an entire rule based upon this one observation seems silly, but it is perfectly logical at the moment. The only objective the algorithm cares about is minimizing the impurity.
 
@@ -108,7 +109,7 @@ Let's prune the model and look again.
 ```{r}
 # Prune the rpart model
 pruned_mdl <- prune(mdl, cp=0.05)
-rpart.plot(pruned_mdl)
+rpart.plot(pruned_mdl, extra = 2, type=1)
 ```
 Above, we can see that our second tree is smaller in depth again. We can look at the decision surface for this tree:
 

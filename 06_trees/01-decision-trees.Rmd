@@ -83,7 +83,7 @@ There are many parameters available for the algorithm; by specifying `maxdepth=1
 
 [1] L. Breiman, J. Friedman, R. Olshen, and C. Stone. Classification and Regression Trees. Wadsworth, Belmont, CA, 1984.
 
-```{r plot_tree, fig.width=6, fig.height=2}
+```{r plot_tree, fig.width=6, fig.height=3}
 # Create and fit the decision tree model
 mdl <- rpart(actualhospitalmortality ~ age + acutephysiologyscore,
              data = train_set, method = "class",
@@ -91,7 +91,7 @@ mdl <- rpart(actualhospitalmortality ~ age + acutephysiologyscore,
 
 # Visualize the decision tree using rpart.plot
 # The "extra" parameter specifies which information should be displayed
-rpart.plot(mdl, extra = 2)
+rpart.plot(mdl, extra = 2, type=1)
 ```
 
 Here we see three nodes: a node at the top, a node in the lower left, and a node in the lower right.
