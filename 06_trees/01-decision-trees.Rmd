@@ -83,11 +83,12 @@ There are many parameters available for the algorithm; by specifying `maxdepth=1
 
 [1] L. Breiman, J. Friedman, R. Olshen, and C. Stone. Classification and Regression Trees. Wadsworth, Belmont, CA, 1984.
 
-```{r}
+```{r plot_tree, fig.width=6, fig.height=2}
 # Create and fit the decision tree model
 mdl <- rpart(actualhospitalmortality ~ age + acutephysiologyscore, data = train_set, method = "class", control = rpart.control(maxdepth = 1))
 
 # Visualize the decision tree using rpart.plot
+# The "extra" parameter specifies which information should be displayed
 rpart.plot(mdl, extra = 2)
 ```
 
@@ -101,12 +102,14 @@ The top node is the root of the tree: it contains all the data. Within a node, w
 
 The model uses a measure of "impurity" to determine each split. The goal of the algorithm is to find a split with the lowest possible impurity in two resulting nodes. 
 
-We does this by iteratively evaluating every feature (in our case, age and apachescore) at every possible split (46, 47, 48..). The approach is referred to as "greedy" because we are choosing the optimal split given our current state. 
+We does this by iteratively evaluating every feature (in our case, age and apachescore) at every possible split (46, 47, 48..). The approach is referred to as "**greedy**" because we are choosing the optimal split given our current state. 
+
+## Decision boundary
 
 Let's take a closer look at our decision boundary.
 
 ```{r}
-txt = "Decision Boundary of the Decision Tree"
+txt = "Decision boundary of the simple tree"
 plot_model_pred_2d(mdl, train_set, "acutephysiologyscore", "age", "actualhospitalmortality",
                    title = txt, 0, 200, 0, 100)
 ```
