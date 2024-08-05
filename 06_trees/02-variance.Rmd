@@ -77,7 +77,7 @@ plot_model_pred_2d(mdl, train_set, "acutephysiologyscore", "age", "actualhospita
                    title = txt, 0, 200, 0, 100)
 ```
 
-Now our tree is more complicated! We can see a few vertical boundaries as well as the horizontal one from before. Some of these we may like, but some appear unnatural. Let's look at the tree itself.
+Now our tree is more complicated! We can see a few vertical boundaries as well as the horizontal one from before (and it makes sense we see this, given we know our modelling decisions are **greedy**. Some of these we may like, but some appear unnatural. Let's look at the tree itself.
 
 ```{r}
 # Visualize the decision tree using rpart.plot
