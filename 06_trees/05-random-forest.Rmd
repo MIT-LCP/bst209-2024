@@ -46,27 +46,11 @@ plot_model_pred_2d <- function(model, dataset, feature1, feature2, target, title
 }
 ```
 
-```{r load_data}
-# Load the data
-cohort <- read.csv("./eicu_cohort_trees.csv")
-features = c("acutephysiologyscore", "age")
-cohort$actualhospitalmortality = as.factor(cohort$actualhospitalmortality)
-
-# adaboost implementation requires outcome as -1/1
-cohort$boosted_mortality <- ifelse(cohort$actualhospitalmortality == levels(cohort$actualhospitalmortality)[1], -1, 1)
-
-# Split the data into training and testing sets
-set.seed(42)
-train_index <- createDataPartition(cohort$acutephysiologyscore, times = 1, p = 0.7, list = FALSE)
-train_set <- cohort[train_index, ]
-test_set <- cohort[-train_index, ]
-```
-
 In the previous example, we used bagging to randomly resample our data to generate "new" datasets. The Random Forest takes this one step further: instead of just resampling our data, we also select only a fraction of the features to include.
 
 It turns out that this subselection tends to improve the performance of our models. The odds of an individual being very good or very bad is higher (i.e. the variance of the trees is increased), and this ends up giving us a final model with better overall performance (lower bias).
 
-Let's train the model.
+Here's a set of trees, plotted iteratively while training a Random Forest model:
 
 ![](./images/random_forest.png)
 
@@ -86,13 +70,34 @@ Let's train the model.
 
 3) Our trees decided against splitting on Age. The model was unable to find a single Age that led to improvement (based on its optimisation criteria).  
 
-Let's look at final model's decision surface.
+Let's train our own mdel and look at final model's decision surface. First, prepare our data:
+
+```{r load_data}
+# Load the data
+cohort <- read.csv("./eicu_cohort_trees.csv")
+features = c("acutephysiologyscore", "age")
+cohort$actualhospitalmortality = as.factor(cohort$actualhospitalmortality)
+
+# adaboost implementation requires outcome as -1/1
+cohort$boosted_mortality <- ifelse(cohort$actualhospitalmortality == levels(cohort$actualhospitalmortality)[1], -1, 1)
+
+# Split the data into training and testing sets
+set.seed(42)
+train_index <- createDataPartition(cohort$acutephysiologyscore, times = 1, p = 0.7, list = FALSE)
+train_set <- cohort[train_index, ]
+test_set <- cohort[-train_index, ]
+```
+
+Now train our model:
 
 ```{r}
+# Train our Random Forest classifier
+# Number of trees to grow (ntree = 6). Default is 500.
+# mtry = 1 specifies the number of variables considered as candidates at each split.
 mdl <- randomForest(actualhospitalmortality ~ age + acutephysiologyscore,
                     data = train_set, ntree = 6, mtry = 1)
 
-# plot the final prediction
+# Plot the final decision surface
 title = 'Random forest (final decision surface)'
 plot <- plot_model_pred_2d(mdl, train_set, "acutephysiologyscore", "age", "actualhospitalmortality",
                            title, 0, 200, 0, 100)
