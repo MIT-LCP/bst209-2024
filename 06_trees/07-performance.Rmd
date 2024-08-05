@@ -1,0 +1,166 @@
+---
+title: "Comparing model performance"
+output: "html_document"
+---
+
+```{r, echo=FALSE, message=FALSE, warnings=FALSE}
+library(rpart)
+library(gbm)
+library(ipred)
+library(pROC)
+library(caret)
+library(randomForest)
+library(ggplot2)
+library(JOUSBoost)
+```
+
+```{r plot_trees, include=FALSE}
+# Plotting setup
+plot_model_pred_2d <- function(model, dataset, feature1, feature2, target,
+                               title, min_f1, max_f1, min_f2, max_f2, model_name) {
+  # Ensure dataset is a data frame
+  if (!is.data.frame(dataset)) {
+    dataset <- as.data.frame(dataset)
+  }
+  
+  # Create a grid over the feature space
+  grid <- expand.grid(
+    feature1 = seq(min_f1, max_f1, length.out = 100),
+    feature2 = seq(min_f2, max_f2, length.out = 100)
+  )
+  
+  # Set correct column names for grid
+  colnames(grid) <- c(feature1, feature2)
+  
+  if (model_name == "AdaBoost") {
+
+    # Convert grid to matrix for prediction
+    grid_matrix <- as.matrix(grid)
+    
+    # Predict class for each point in the grid using the model
+    grid$predicted_class <- predict(model, X = grid_matrix, type = "response")
+    
+    # Convert predicted class to a factor for proper use in ggplot
+    grid$predicted_class <- factor(ifelse(grid$predicted_class > 0, 1, -1))
+    
+  } else if (model_name == "Gradient Boosting") {
+    
+    # Predict probabilities for each point in the grid using the model
+    grid$predicted_prob <- predict(model, newdata = grid,
+                                   n.trees = gbm.perf(model, method = "cv", plot.it = FALSE),
+                                   type = "response")
+    
+    # Convert probabilities to class labels
+    grid$predicted_class <- ifelse(grid$predicted_prob > 0.5, 1, 0)
+    
+    # Convert predicted_class to a factor
+    grid$predicted_class <- factor(grid$predicted_class, levels = c(0, 1))
+    
+    # Convert target to a factor
+    dataset[[target]] <- factor(dataset[[target]], levels = c(0, 1))
+    
+  } else {
+
+    # Predict class for each point in the grid using the model
+    grid$predicted_class <- predict(model, newdata = grid, type = "class")
+    
+  }
+  
+  plot <- ggplot() +
+    geom_tile(data = grid, aes(x = .data[[feature2]], y = .data[[feature1]], fill = .data$predicted_class), alpha = 0.3) +
+    geom_point(data = dataset, aes(x = .data[[feature2]], y = .data[[feature1]], color = .data[[target]]), size = 2) +
+    labs(title = title, x = feature2, y = feature1) +
+    scale_fill_manual(values = c("red", "blue"), name = "Predicted Class") +
+    scale_color_manual(values = c("red", "blue"), name = "Actual Class") +
+    theme_minimal()
+  
+  return(plot)
+}
+```
+
+
+```{r load_data, include=FALSE}
+# Load the data
+cohort <- read.csv("./eicu_cohort_trees.csv")
+features = c("acutephysiologyscore", "age")
+cohort$actualhospitalmortality = as.factor(cohort$actualhospitalmortality)
+
+# adaboost implementation requires outcome as -1/1
+cohort$boosted_mortality <- ifelse(cohort$actualhospitalmortality == levels(cohort$actualhospitalmortality)[1], -1, 1)
+cohort$xg_mortality <- ifelse(cohort$actualhospitalmortality == levels(cohort$actualhospitalmortality)[1], 0, 1)
+
+# Split the data into training and testing sets
+set.seed(42)
+train_index <- createDataPartition(cohort$acutephysiologyscore, times = 1, p = 0.7, list = FALSE)
+train_set <- cohort[train_index, ]
+test_set <- cohort[-train_index, ]
+```
+
+We've now learned the basics of the various tree methods and have visualized most of them. Let's finish by comparing the performance of our models on our held-out test data. Our goal, remember, is to predict whether or not a patient will survive their hospital stay using the patient's age and acute physiology score computed on the first day of their ICU stay.
+
+```{r, message=FALSE}
+# Initialize a list to store models
+clf <- list()
+
+# Train models
+clf[['Decision Tree']] <- rpart(actualhospitalmortality ~ age + acutephysiologyscore,
+                                data = train_set,
+                                method = "class",
+                                control = rpart.control(maxdepth = 5))
+
+clf[['AdaBoost']] <- adaboost(as.matrix(train_set[, features]),
+                              train_set$boosted_mortality,
+                              n_rounds = 50)
+
+clf[['Bagging']] <- bagging(actualhospitalmortality ~ age + acutephysiologyscore,
+                            data = train_set,
+                            coob = TRUE,
+                            nbagg = 100,
+                            cp = 0.01)
+
+clf[['Random Forest']] <- randomForest(actualhospitalmortality ~ age + acutephysiologyscore,
+                                       data = train_set,
+                                       ntree = 10,
+                                       mtry = 1)
+
+clf[['Gradient Boosting']] <- gbm(formula = xg_mortality ~ age + acutephysiologyscore,
+                                  data = train_set, 
+                                  n.trees = 15,
+                                  cv.folds = 5,
+                                  distribution = "bernoulli")
+```
+
+Performance on the held-out test set:
+
+```{r plot, echo=FALSE, message=FALSE}
+# Print AUROC scores and plot decision boundaries
+par(mfrow = c(3, 2))
+for (i in seq_along(clf)) {
+  model_name <- names(clf)[i]
+  model <- clf[[model_name]]
+
+  if (model_name == "AdaBoost") {
+    yhat <- predict(model, X = test_set, type = "response")
+  } else if (model_name == "Gradient Boosting") {
+    yhat <- predict(model, newdata = test_set, type = "response")
+  } else {
+    yhat <- predict(model, newdata = test_set, type = "prob")[,2]
+  }
+  
+  # Calculate AUROC
+  score <- auc(test_set$actualhospitalmortality, yhat)
+  
+  # Plot tree
+  title <- paste(model_name, "( AUROC:", round(score, 3),")")
+  plot <- plot_model_pred_2d(model, test_set, "acutephysiologyscore", "age", "actualhospitalmortality",
+                             title, 0, 200, 0, 100, model_name)
+  print(plot)
+}
+```
+
+Here we can see that quantitatively, gradient boosting has produced the highest discrimination among all the models (~0.81). You'll see that some of the models appear to have simpler decision surfaces, which tends to result in improved generalization on a held-out test set (though not always!).
+
+To make appropriate comparisons, we should calculate 95% confidence intervals on these performance estimates. A simple but effective approach is to use bootstrapping, a resampling technique.
+
+In bootstrapping, we generate multiple datasets from the test set (allowing the same data point to be sampled multiple times). Using these datasets, we can then estimate the confidence intervals.
+
