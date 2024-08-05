@@ -85,7 +85,9 @@ There are many parameters available for the algorithm; by specifying `maxdepth=1
 
 ```{r plot_tree, fig.width=6, fig.height=2}
 # Create and fit the decision tree model
-mdl <- rpart(actualhospitalmortality ~ age + acutephysiologyscore, data = train_set, method = "class", control = rpart.control(maxdepth = 1))
+mdl <- rpart(actualhospitalmortality ~ age + acutephysiologyscore,
+             data = train_set, method = "class",
+             control = rpart.control(maxdepth = 3, minbucket = 1))
 
 # Visualize the decision tree using rpart.plot
 # The "extra" parameter specifies which information should be displayed
@@ -102,7 +104,7 @@ The top node is the root of the tree: it contains all the data. Within a node, w
 
 The model uses a measure of "impurity" to determine each split. The goal of the algorithm is to find a split with the lowest possible impurity in two resulting nodes. 
 
-We does this by iteratively evaluating every feature (in our case, age and apachescore) at every possible split (46, 47, 48..). The approach is referred to as "**greedy**" because we are choosing the optimal split given our current state. 
+We does this by iteratively evaluating every feature (in our case, age and apachescore) at every possible split (46, 47, 48..). Often algorithms follow a "**greedy**" approach, choosing the optimal split given our current state, without consideration for later decisions. 
 
 ## Decision boundary
 
