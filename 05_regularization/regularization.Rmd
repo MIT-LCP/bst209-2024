@@ -226,6 +226,12 @@ fit_ridge = cv.glmnet(X_train, y_train, family = "binomial", alpha = 0)
 fit_lasso = cv.glmnet(X_train, y_train, family = "binomial", alpha = 1)
 ```
 
+
+```{r}
+coef(fit_lasso)
+coef(fit_ridge)
+```
+
 ## Root mean-square error (RMSE)
 
 To evaluate our three models' performances on the test set, we will consider the root mean square error (RMSE). If $\hat{y_i}$ is our predicted probability and $y_i$ is the true label (hospitalized in 2017 or not), then we would prefer the model that minimizes: 
