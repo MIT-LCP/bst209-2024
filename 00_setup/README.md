@@ -4,5 +4,5 @@
 
 To install R libraries used in this course:
 
-- Open `installation.Rmd` in RStudio
+- Open `libraries.Rmd` in RStudio
 - Click "Knit"
