@@ -30,4 +30,5 @@ install.packages("cluster") # Clustering
 install.packages("pROC") # Evaluation
 install.packages("ROCR") # Evaluation
 install.packages("tidymodels") # Workflows
+install.packages("ollamar")
 ```
