@@ -24,6 +24,12 @@ The approach emphasizes tracking changes in sample composition as a study progre
 
 By showing the distribution of sociodemographic features across different stages of the process of building our final cohort for the analysis, we aim to identify and highlight various types of biases and inequities.
 
+Why is it important to monitor changes (decreases) in the percentage of some subgroups throughout a study?
+
+A decrease in the representation of any subgroup in a study can compromise its external validity, making the conclusions less applicable to the entire population it aims to represent.
+
+This is why it is essential to monitor representativeness throughout all stages of a study, especially when the goal is to apply the results equitably and fairly to a diverse population.
+
 <br>
 By the end of the workshop, you should be able to answer questions like those:
 
