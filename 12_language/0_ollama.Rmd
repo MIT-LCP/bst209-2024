@@ -1,0 +1,141 @@
+---
+title: "Introduction to Large language models"
+output: "html_document"
+---
+
+In this workshop we'll be exploring large language models. These models show remarkable capabilities in responding to human language, generating coherent text, and performing tasks such summarization and information extraction.
+
+They are surrounded by a huge amount of controversy (for good reason), but it is fair to say that they can be helpful when used with caution. We will be touching on some of their potential use cases.
+
+### Discussion
+
+A) Which large language models are you are familiar with?
+
+B) What are their potential use cases in the context of health and healthcare?
+
+C) What are some risks or harms associated with using language models?
+
+D) Do you use large language models? If so, how?
+
+## Ollama
+
+Typically, when working with health data, privacy is key. For this reason we'll be using Ollama, which allows us to install and run large language models on our local machine: https://ollama.com/ (it is also free, unlike many of the commercial APIs).
+
+![](./images/ollama.png)
+
+Before we move on, let's play around with Ollama from the command line. There are [many models to choose from](https://ollama.com/library). We will use *Large Language Model Meta AI* ("Llama") 3. 
+
+## Llama 3
+
+LLama 3 is a "herd of language models that natively support multilinguality, coding, reasoning, and tool usage". You can read more in the paper at: https://ai.meta.com/research/publications/the-llama-3-herd-of-models/. 
+
+### Exercise
+
+Read the abstract and introduction to the paper and answer the following questions:
+
+A) Why is LLama 3 referred to as "a herd" of models?
+
+B) What are the "three key levers" in the development of high-quality models, according to the authors?
+
+C) Table 2 reports performance in a series of benchmark tasks. The legend discusses "zero-shot prompting"; "5-shot prompting"; and "CoT". What is prompting? How would you describe these differnet approaches?
+
+## Installation
+
+We'll first need to ensure the model is installed by "pulling" the model to our machine:
+
+```
+ollama pull llama3
+```
+
+Let's begin by getting some basic information about our model. `ollama -h` will give us a list of available commands. Use the appropriate command to generate some summary information. You should see something like this:
+
+```
+  Model                                              
+  	arch            	?	                              
+  	parameters      	?   	                              
+  	quantization    	? 	                              
+  	context length  	? 	                              
+  	embedding length	? 
+```
+
+Some models may be more computationally demanding than others. The "parameter" count refers to the number of adjustable parameters in the model. These parameters are essentially the weights and biases that the model learns during training. According to the Ollama documentation:
+
+> You should have at least 8 GB of RAM available to run the 7B models, 16 GB to run the 13B models, and 32 GB to run the 33B models.
+
+What is the parameter count for our model? Does your laptop have sufficient RAM? If not, you could consider switching out your model for one that is less resource hungry. Other characteristics of our model are:
+
+- `arch`: "Arch" refers to the model architecture.
+- `quantization`: Quantization refers to the precision of the parameters used in a model. Reducing precision can help to decrease the memory and compute requirements. For example, `Q8` refers to 8 bit quantization.
+- `context length`: Context length refers to the maximum number of tokens (words or characters) that the model can consider at once when processing input text.                   
+- `embedding length`: Embedding length refers to the length of the vector that represents a token. For example, an embedding length of 768 means each token is represented as a 768-dimensional vector.
+
+## Writing our first prompt
+
+We can run the model from the command line with:
+
+```
+ollama run llama3
+```
+
+We then write a **prompt** to generate a response.
+
+Note: For a multi-line prompt, we can begin and end our prompt with `"""` (perhaps not coincidentally, this is the syntax for a multi-line prompt in Python).
+
+### Exercise
+
+1) Ask a multiple choice question of your choice using the following structure:
+
+```
+Question: What is the capital of the United Kingdom?
+
+Choices:
+
+- A) Mumbai.  
+
+- B) London.  
+
+- C) Sydney.  
+
+- D) Tokyo.  
+```
+
+2) Ask the model to generate R code to create a dataset containing blood pressures of 10 patients, as well as code to calculate the mean, median, and standard deviation of blood pressure readings.
+
+3) Describe the symptoms of a heart attack in men. Describe the symptoms of a heart attack in women. Compare the responses and discuss any observed differences.
+
+4) What are the most common side effects of the flu vaccine? Compare results across the class.
+
+5) Explain diabetes in simple terms for a patient.
+
+### Solution
+
+1) What was your question? Did the model answer correctly?
+
+2) Try running the code in R.
+
+3) Compare and discuss.
+
+4) Compare and discuss.
+
+5) Compare and discuss.
+
+## Changing the temperature
+
+There are various parameters that can be set with: `/set parameter  <PARAM> <VALUE>`, including:
+
+- `temperature`: "The temperature of the model. Increasing the temperature will make the model answer more creatively." (Default: 0.8)
+
+- `seed`: "Sets the random number seed to use for generation. Setting this to a specific number will make the model generate the same text for the same prompt." (Default: 0)
+
+- `repeat_penalty`: "Sets how strongly to penalize repetitions. A higher value (e.g., 1.5) will penalize repetitions more strongly, while a lower value (e.g., 0.9) will be more lenient." (Default: 1.1)
+
+- `num_ctx`: "Sets the size of the context window used to generate the next token." (Default: 2048)	
+
+For example, we can experiment with:
+
+- `/set parameter  temperature 0` 
+
+- `/set parameter  num_ctx 15`
+
+How would you expect these changes to affect the output of our model?
+
