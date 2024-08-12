@@ -379,6 +379,14 @@ study progresses.</p>
 different stages of the process of building our final cohort for the
 analysis, we aim to identify and highlight various types of biases and
 inequities.</p>
+<p>Why is it important to monitor changes (decreases) in the percentage
+of some subgroups throughout a study?</p>
+<p>A decrease in the representation of any subgroup in a study can
+compromise its external validity, making the conclusions less applicable
+to the entire population it aims to represent.</p>
+<p>This is why it is essential to monitor representativeness throughout
+all stages of a study, especially when the goal is to apply the results
+equitably and fairly to a diverse population.</p>
 <p><br> By the end of the workshop, you should be able to answer
 questions like those:</p>
 <ul>
@@ -1072,23 +1080,46 @@ patient_samples_mimic_iv_list$vitals_withSpO2 &lt;- patient_samples_mimic_iv_lis
 
 patient_samples_mimic_iv_list$vitals_withSpO2_SaO2 &lt;- patient_samples_mimic_iv_list$vitals %&gt;%
   filter(!is.na(SpO2) &amp; subject_id %in% patient_samples_mimic_iv_list$abgs$subject_id)</code></pre>
-<p>Here, we use the data.table package to efficiently handle large
-datasets and foverlaps function to join datasets based on overlapping
-time intervals.</p>
+<p>Here, we use the data.table package, which provides fast data
+manipulation, especially for large datasets, and the foverlaps function
+to join datasets based on overlapping time intervals.</p>
 <pre class="r"><code># Convert datasets to data.table
 patient_samples_mimic_iv_list$abgs &lt;- as.data.table(patient_samples_mimic_iv_list$abgs)
-patient_samples_mimic_iv_list$vitals_withSpO2_SaO2 &lt;- as.data.table(patient_samples_mimic_iv_list$vitals_withSpO2_SaO2)
+patient_samples_mimic_iv_list$vitals_withSpO2_SaO2 &lt;- as.data.table(patient_samples_mimic_iv_list$vitals_withSpO2_SaO2)</code></pre>
+<p>Now, we combine data from two different sources (ABG and vital signs
+data) by aligning their time intervals based on the hospital admission
+ID (hadm_id).</p>
+<p>By creating overlapping time intervals and using the foverlaps
+function, the code efficiently merges the ABG and vital signs datasets
+to include observations where the timing of measurements might overlap
+(i.e., SaO2 and SpO2).</p>
+<p>The resulting dataset, mimic_iv_ABG_SpO2, will contain matched rows
+where SaO2 and SpO2 are aligned based on admission ID and a 5-minute
+time interval.</p>
+<p>Next, a 5-minute time interval is created around the charttime_abgs
+column so we can perform the overlapping join between the two
+datasets.</p>
+<pre class="r"><code># Time intervals are defined for each observation in the ABGs dataset
 
-# Time intervals are defined for each observation in the ABGs dataset
 # Add start and end time columns
+
+# A 5-minute time interval is created around the charttime_abgs column, with start being 5 minutes before charttime_abgs and end being the exact charttime_abgs
 patient_samples_mimic_iv_list$abgs[, `:=`(start = charttime_abgs - minutes(5), end = charttime_abgs)]
 patient_samples_mimic_iv_list$vitals_withSpO2_SaO2[, `:=`(start = charttime_vitals, end = charttime_vitals)]
 
-# Set keys for data.tables for efficient overlapping joins
-setkey(patient_samples_mimic_iv_list$abgs, hadm_id, start, end)
-setkey(patient_samples_mimic_iv_list$vitals_withSpO2_SaO2, hadm_id, start, end)
+# Set keys for data.tables for efficient overlapping joins and filtering operations in data.table.
 
-# Perform asof join using foverlaps
+# Keys are set on the hadm_id, start, and end columns for both datasets
+
+# The hadm_id represents the admission ID, and start and end represent the time intervals during which specific measurements were taken.
+setkey(patient_samples_mimic_iv_list$abgs, hadm_id, start, end)
+setkey(patient_samples_mimic_iv_list$vitals_withSpO2_SaO2, hadm_id, start, end)</code></pre>
+<p>Perform overlapping join using foverlaps</p>
+<pre class="r"><code># The foverlaps function performs an overlapping join between the two datasets based on the specified columns (hadm_id, start, and end).
+
+# foverlaps is used when you want to match rows from one table to another based on overlapping time intervals.
+
+# The type = &quot;any&quot; argument specifies that any overlap between the intervals in the two datasets should result in a match.
 mimic_iv_ABG_SpO2 &lt;- foverlaps(
   patient_samples_mimic_iv_list$abgs, 
   patient_samples_mimic_iv_list$vitals_withSpO2_SaO2, 
