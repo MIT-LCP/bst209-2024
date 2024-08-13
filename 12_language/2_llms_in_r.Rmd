@@ -156,9 +156,9 @@ What do you see as the strengths and weaknesses of evaluation through expert rev
 
 ## Question-Answer (QA) datasets
 
-Another popular approach for evaluation is use of QA datasets, which consist of sets of structured question and answers QA datasets provide a more standardized and objective measure of a model's performance.
+Another popular approach for evaluation is with the use of QA datasets, which consist of sets of structured question and answers. The goal is a more standardized, objective measure of a model's performance.
 
-### Examples of QA Datasets:
+### Examples of QA datasets
 
 - MEDQA: Questions in this dataset are collected from medical board exams in US, Mainland China, and Taiwan. [Sample data](./medqa_100.csv). [Paper](./medqa.pdf).
 
@@ -166,11 +166,9 @@ Another popular approach for evaluation is use of QA datasets, which consist of 
 
 ![](./images/multimedqa.png)
 
-## Integrating QA Datasets into Your Workflow
+We can integrate QA datasets into our evaluation workflow to systematically assess our model's performance.
 
-We can integrate QA datasets into your evaluation workflow to systematically assess our model's performance.
-
-### Load MEDQA Dataset
+### Load the MEDQA dataset
 
 Let’s load the [medqa.csv](./medqa_100.csv) file containing five examples:
 
@@ -183,7 +181,7 @@ medqa_data <- read.csv("./medqa_100.csv",
 kable(medqa_data)
 ```
 
-### Generate Responses
+### Generate responses
 
 Now let's loop through the MEDQA questions and generate responses:
 
@@ -217,9 +215,9 @@ qa_results <- data.frame(
 kable(qa_results)
 ```
 
-### Evaluating Against QA Datasets
+### Evaluating against QA datasets
 
-After generating responses, you can compare the model’s output to the correct answers provided in the QA dataset. Metrics such as accuracy can be used to quantify the model’s performance:
+After generating responses, we can compare our model’s output to the correct answers provided in the QA dataset. Metrics such as accuracy can be used to quantify performance:
 
 ```{r, message=FALSE}
 # Calculate accuracy
@@ -234,7 +232,7 @@ accuracy <- sum(qa_results$IsCorrect) / nrow(qa_results)
 print(paste("Accuracy:", accuracy * 100, "%"))
 ```
 
-## Discussion
+### Discussion
 
 What are the strengths and weaknesses of this kind of evaluation? Do you think multiple-choice questions are a valid way to assess a language model’s performance in a medical context? How does this compare to the way medical professionals work in practice?
 
