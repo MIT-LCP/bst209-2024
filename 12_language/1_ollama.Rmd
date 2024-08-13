@@ -145,3 +145,6 @@ For example, we can experiment with:
 
 How would you expect these changes to affect the output of our model?
 
+> Careful: Clearing context with `/clear` will also reset any parameters that you have set using the commands above.
+
+
