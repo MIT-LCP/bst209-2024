@@ -1,5 +1,5 @@
 ---
-title: "Introduction to Large language models"
+title: "Introduction to large language models"
 output: "html_document"
 ---
 
@@ -37,7 +37,15 @@ A) Why is LLama 3 referred to as "a herd" of models?
 
 B) What are the "three key levers" in the development of high-quality models, according to the authors?
 
-C) Table 2 reports performance in a series of benchmark tasks. The legend discusses "zero-shot prompting"; "5-shot prompting"; and "CoT". What is prompting? How would you describe these differnet approaches?
+C) Table 2 reports performance in a series of benchmark tasks. The legend discusses "zero-shot prompting"; "5-shot prompting"; and "CoT". What is prompting? How would you describe these different approaches?
+
+### Answers
+
+A) Llama 3 comprises a collection of models (including 8B, 70B, and 405B parameter versions).
+
+B) Data; Scale; and Complexity.
+
+C) Prompting describes the method of posing a question to a model. **Zero-shot** prompting is asking a question with no prior information; **5-shot** prompting is asking a question where 5 example question-answer pairs are provided for context; **CoT** is "Chain of thought", an approach that attempts to walk the model through a set of logical steps towards the solution.
 
 ## Installation
 
@@ -101,11 +109,7 @@ Choices:
 
 2) Ask the model to generate R code to create a dataset containing blood pressures of 10 patients, as well as code to calculate the mean, median, and standard deviation of blood pressure readings.
 
-3) Describe the symptoms of a heart attack in men. Describe the symptoms of a heart attack in women. Compare the responses and discuss any observed differences.
-
-4) What are the most common side effects of the flu vaccine? Compare results across the class.
-
-5) Explain diabetes in simple terms for a patient.
+3) Patient presents to the ED with a cough. What is the diagnosis? How does adding nationality or demographics change the diagnosis?
 
 ### Solution
 
@@ -114,10 +118,6 @@ Choices:
 2) Try running the code in R.
 
 3) Compare and discuss.
-
-4) Compare and discuss.
-
-5) Compare and discuss.
 
 ## Changing the temperature
 
@@ -138,4 +138,3 @@ For example, we can experiment with:
 - `/set parameter  num_ctx 15`
 
 How would you expect these changes to affect the output of our model?
-
