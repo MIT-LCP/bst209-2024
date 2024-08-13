@@ -1,0 +1,230 @@
+---
+title: "Large language models in R"
+output: "html_document"
+---
+
+```{r, echo=FALSE, message=FALSE, warnings=FALSE}
+library(dplyr)
+library(ollamar)
+library(ggplot2)
+library(knitr)
+library(tidyr)
+```
+
+While interacting with language models from the command line is convenient, it isn't well-suited to running an analysis. In this workshop, we will connect RMarkdown notebook to a local language model using [Ollamar](https://cran.r-project.org/web/packages/ollamar/ollamar.pdf) and carry out an analyses.
+
+## Test connection
+
+First, let's test our connection to the Ollama server:
+
+```{r, message=TRUE, include=TRUE}
+# test connection to Ollama server
+connection = test_connection()
+```
+
+If you see: "Ollama local server running", you are good to go!
+
+## Load model
+
+We can now start interacting with large language models hosted locally.  First, let's check which (if any) models are already available to us: 
+
+```{r, message=FALSE}
+list_models()
+```
+
+The output lists currently available models (e.g., llama2), their parameter size (e.g., `8B`, indicating that the model has 8 billion parameters), and their quantization level (e.g., `Q4_0`, which refers to the model's weights being quantized to 4 bits).
+
+```{r, message=FALSE}
+pull("llama3.1")
+```
+
+We can use the `generate` function to submit our prompt and generate a response:
+
+```{r, message=FALSE}
+# generate a response based on a prompt; returns an httr2 response by default
+dataframe <- generate("llama3", "tell me a 5-word story", output = "df")
+print(dataframe$response)
+```
+
+## Expert evaluation
+
+One way of evaluating the quality of our model is through expert evaluation. We prompt our model with questions, and then our expert collaborators evaluate the responses:
+
+Define our questions:
+
+```{r, message=FALSE}
+# Sample questions
+questions <- c(
+  "What is the most common cause of heart failure? Answer in one paragraph.",
+  "What are the side effects of metformin? Answer in one paragraph.",
+  "What is the first-line treatment for hypertension? Answer in one paragraph.",
+  "What are the symptoms of a stroke? Answer in one paragraph.",
+  "What is the mechanism of action of aspirin? Answer in one paragraph."
+)
+```
+
+Now let's loop through these questions and generate responses:
+
+```{r, message=FALSE}
+# Initialize a list to store responses
+responses <- vector("list", length(questions))
+
+# Loop questions and generate responses
+for (i in seq_along(questions)) {
+  response <- tryCatch({
+    generate("llama3", questions[i], output = "text")
+  }, error = function(e) {
+    NA  # Return NA if there's an error
+  })
+  responses[[i]] <- response$response
+}
+
+# Combine questions and responses into a data frame
+results_df <- data.frame(
+  Question = questions,
+  Response = unlist(responses)
+)
+
+kable(results_df)
+```
+
+## Evaluate
+
+Now we assign some kind of score through expert review, e.g.
+
+- Correct
+- Partially incorrect
+- Incorrect
+
+```{r, message=FALSE}
+# Sample evaluation scores (this would be done manually in practice)
+evaluation_scores <- c("Correct",
+                       "Partially Correct",
+                       "Correct",
+                       "Correct",
+                       "Partially Correct")
+
+# Add the scores to the results data frame
+results_df <- results_df %>%
+  mutate(Evaluation = evaluation_scores)
+
+# Set the factor levels in the desired order
+results_df$Evaluation <- factor(results_df$Evaluation,
+                                levels = c("Correct",
+                                           "Partially Correct",
+                                           "Incorrect"))
+
+kable(results_df)
+```
+
+```{r, message=FALSE}
+# Count the occurrences of each evaluation type
+evaluation_counts <- results_df %>%
+  group_by(Evaluation) %>%
+  summarize(Count = n())
+
+# Fill missing levels with zero counts
+evaluation_counts <- evaluation_counts %>%
+  complete(Evaluation = factor(c("Correct",
+                                 "Partially Correct",
+                                 "Incorrect")), fill = list(Count = 0))
+
+# Plot the bar chart
+ggplot(evaluation_counts, aes(x = Evaluation,
+                              y = Count,
+                              fill = Evaluation)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Llama 3 evaluation") +
+  theme_minimal()
+```
+
+Evaluating language models through expert review has challenges, for example:
+
+- Subjectivity and inter-expert variability
+
+- Resource intensive, and doesn't scale well
+
+- Lack of standardization
+
+- Bias in evaluation
+
+## Question-Answer (QA) datasets
+
+QA datasets consist of collections of questions along with their corresponding correct answers, and are often used to provide a more standardized and objective measure of a model's performance.
+
+### Examples of QA Datasets:
+
+- MEDQA: Questions in this dataset are collected from medical board exams in US, Mainland China, and Taiwan. [Sample data](./medqa_100.csv). [Paper](./medqa.pdf).
+
+- MultiMedQA: Combines six existing open question answering datasets spanning professional medical exams, research, and consumer queries; as well as HealthSearchQA, a new free-response dataset of medical questions searched online. [Paper](./multimedqa.pdf).
+
+![](./images/multimedqa.png)
+
+## Integrating QA Datasets into Your Workflow
+
+You can integrate QA datasets into your evaluation workflow to systematically assess your language model's performance.
+
+### Load MEDQA Dataset
+
+Let’s load the medqa.csv file containing five examples:
+
+```{r, message=FALSE}
+# Load the MEDQA dataset
+medqa_data <- read.csv("./medqa_100.csv",
+                       stringsAsFactors = FALSE) %>% head(5)
+
+# Display the loaded data
+kable(medqa_data)
+```
+
+### Generate Responses
+
+Now let's loop through the MEDQA questions and generate responses:
+
+```{r, message=FALSE}
+# Initialize a list to store responses
+responses <- vector("list", length(medqa_data$question))
+
+# Loop through the questions and generate responses
+for (i in seq_along(medqa_data$question)) {
+  # Modify the prompt to instruct the model to respond with just the letter
+  prompt <- paste0(medqa_data$question[i],
+                   "\nPlease provide the correct answer as a single letter (A, B, C, or D) without any additional text, choosing from the following 4 options: ", medqa_data$options[i])
+  
+  response <- tryCatch({
+    generate("llama3", prompt, output = "text")
+  }, error = function(e) {
+    NA  # Return NA if there's an error
+  })
+  responses[[i]] <- response$response
+}
+
+# Combine questions, correct answers, and generated responses into a data frame
+qa_results <- data.frame(
+  Question = medqa_data$question,
+  Options = medqa_data$options,
+  CorrectAnswer = medqa_data$answer,
+  CorrectAnswerIndex = medqa_data$answer_idx,
+  ModelResponse = unlist(responses)
+)
+
+kable(qa_results)
+```
+
+### Evaluating Against QA Datasets
+
+After generating responses, you can compare the model’s output to the correct answers provided in the QA dataset. Metrics such as accuracy can be used to quantify the model’s performance:
+
+```{r, message=FALSE}
+# Calculate accuracy
+qa_results <- qa_results %>%
+  mutate(
+    IsCorrect = ifelse(trimws(ModelResponse) == CorrectAnswerIndex, TRUE, FALSE)
+  )
+
+accuracy <- sum(qa_results$IsCorrect) / nrow(qa_results)
+
+# Print accuracy
+print(paste("Accuracy:", accuracy * 100, "%"))
+```
+
