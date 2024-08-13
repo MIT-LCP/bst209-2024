@@ -89,6 +89,12 @@ We then write a **prompt** to generate a response.
 
 Note: For a multi-line prompt, we can begin and end our prompt with `"""` (perhaps not coincidentally, this is the syntax for a multi-line prompt in Python).
 
+## Clearing context
+
+The first time you ask `Finish this sentence: "The cat sat on the ..."`, you're likely to receive "mat!" as the response. Asking the same question a second time may elicit a very different response because your conversation is part of the context.
+
+You can clear your previous context with `/clear`. This resets your conversation, and should return you to the initial response of "Mat!".
+
 ### Exercise
 
 1) Ask a multiple choice question of your choice using the following structure:
@@ -138,3 +144,4 @@ For example, we can experiment with:
 - `/set parameter  num_ctx 15`
 
 How would you expect these changes to affect the output of our model?
+
